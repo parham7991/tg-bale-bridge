@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.17.0] - 2026-09-22
+
+### Changed — 📜 logbuf package: the log buffer goes modular
+- **All log-buffer logic extracted into `bridge/logbuf/`** (the flat
+  `bridge/logbuf.py` is replaced by the package — same import path, no shim
+  file needed):
+  - `bridge/logbuf/types_map.py` — default capacity (300), line format,
+    tail clamp bounds
+  - `bridge/logbuf/ring.py` — **RingEngine**: pure ring mechanics over a
+    `deque` (append + clamped tail + len)
+  - `bridge/logbuf/handler.py` — **HandlerEngine**: `RingBufferHandler`
+    (logging-safe emit that never raises) on top of RingEngine; `.lines`
+    alias kept for legacy code
+  - `bridge/logbuf/bootstrap.py` — **InstallEngine**: `install()` attaches
+    the handler to the root logger with the standard format — same function
+    signature as before
+  - `bridge/logbuf/facade.py` — re-exports the exact legacy surface
+    (`RingBufferHandler` + `install`)
+- Consumers untouched: `from ..logbuf import install` (runtime facade +
+  installer) works via the package; `/logs` admin command and the dashboard
+  `/api/logs` still read `.tail(n)`
+
+### Tests
+- 6 new offline tests (`tests/test_logbuf_engines.py`): ring capacity/
+  eviction/clamp, error-swallowing emit, `.lines` alias, root-logger attach
+  + format, legacy surface
+
 ## [2.16.0] - 2026-09-22
 
 ### Changed — ⚙️ appcfg package: configuration goes modular — map complete

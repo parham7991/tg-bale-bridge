@@ -115,7 +115,7 @@
 | `runtime/facade.py` | 🧩 Runtime | جریان کامل بوت — همان رفتار main قدیمی |
 | `runtime/overrides.py` / `installer.py` | ⚙️ اورراید و نصاب | store→cfg (فقط خانه‌های خالی)، بوت سبک ویزارد |
 | `runtime/wiring.py` / `bots.py` / `lifecycle.py` | 🔌 سیم‌کشی، بات‌ها، چرخه | سمت بله/تلگرام+پل+ادمین، بات‌های کنترلی، صف وظایف و پاک‌سازی |
-| `bridge/logbuf.py` | 📜 موتور لاگ | بافر حلقه‌ای زنده |
+| **`bridge/logbuf/`** | 📜 بستهٔ بافر لاگ | ↓ تفکیک کامل ↓ (حلقهٔ خطوط، هندلر امن، نصب) |
 | **`bridge/dashboard/`** | 🌐 بستهٔ داشبورد | ↓ تفکیک کامل ↓ |
 | `dashboard/app.py` | مونتاژ | کلاس Dashboard + aiohttp |
 | `dashboard/api.py` | لایهٔ HTTP | میدلور (خطا/CSRF/سشن) + هندلرهای نازک |
