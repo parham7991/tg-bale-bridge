@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.0] - 2026-09-22
+
+### Changed — 🧙‍♂️ installer wizard: modular engine package
+- **All wizard logic extracted into `bridge/wizard/`** (was a 570-line file):
+  - `bridge/wizard/types_map.py` — pure constants/extractors: direction keyboard,
+    forward-chat info (both Bot-API shapes), token extraction, prompts
+  - `bridge/wizard/menu.py` — **MenuEngine**: glass-button keyboard + install status text
+  - `bridge/wizard/accounts.py` — **AccountsEngine**: Bale-side API builders
+    (bot BotAPI, BaleUserAPI self, setup resolver) + real token check
+  - `bridge/wizard/pairing.py` — **PairingEngine**: two-step channel pairing
+    (forward/@ref resolve via the TG selfbot, Bale resolve via self-or-bot),
+    direction choice, DB insert + access report
+  - `bridge/wizard/checks.py` — **AccessReportEngine**: real-access report for
+    every account on every pair (probes come from the tguser/bale gateways)
+  - `bridge/wizard/promote.py` — **PromoteEngine**: selfbot promotes the Bale bot
+    on all pairs + per-channel send test
+  - `bridge/wizard/dashinfo.py` — **DashInfoEngine**: dashboard URL + one-time password
+  - `bridge/wizard/finish.py` — **FinishEngine**: completeness check + auto-restart (execv)
+  - `bridge/wizard/probes.py` — compatibility module-level `probe_tg_access` /
+    `probe_bale_access` / `_tg_username` (admin + dashboard import these)
+  - `bridge/wizard/facade.py` — **Wizard**: the FSM (only place that knows the
+    question order) + delegation; exact legacy surface preserved
+- All engines reach I/O through the facade, so test stubs (`w._tg_client`,
+  `w._bale_user_api`, …) keep working unchanged
+- `bridge/wizard.py` kept as a re-export shim — no breaking imports
+- No behavior change; **243 tests green** (14 new engine tests), ruff clean
+
+[2.9.0]: https://github.com/parham7991/tg-bale-bridge/compare/v2.8.0...v2.9.0
+
 ## [2.8.0] - 2026-09-22
 
 ### Changed — ❤️ transfer engine: the heart of the bridge, modularized
