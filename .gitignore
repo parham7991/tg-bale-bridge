@@ -1,14 +1,24 @@
+# secrets & runtime
 .env
 data/
 *.session
 *.session-journal
+
+# python
 __pycache__/
-*.pyc
+*.py[cod]
 .venv/
-venv/
 .pytest_cache/
 .ruff_cache/
-*.egg-info/
-dist/
-build/
-.cache/
+
+# live test scratch — session/credentials never go to git
+live_test/session.bale
+live_test/txn.json
+live_test/results.json
+live_test/events.jsonl
+live_test/events_summary.json
+live_test/test_pixel.png
+live_test/__pycache__/
+
+# os / editor
+.DS_Store
