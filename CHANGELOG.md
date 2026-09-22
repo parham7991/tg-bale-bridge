@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.0] - 2026-09-22
+
+### Changed — 🎛 admin panel: modular engine package
+- **All admin-panel logic extracted into `bridge/admin/`** (was a 501-line file):
+  - `bridge/admin/types_map.py` — pure: command/mode aliases (fa+en), HELP texts,
+    command parser, uptime formatting
+  - `bridge/admin/surfaces.py` — **SurfacesEngine**: active management surfaces +
+    selfbot/bot mode awareness (4-surface panel text)
+  - `bridge/admin/resolver.py` — **ResolverEngine**: Telegram channel resolve
+    (Persian guidance on failure) + `/id` forward description for all three
+    update shapes (Bale dict, TG-bot dict, Telethon object)
+  - `bridge/admin/pairs_cmds.py` — **PairsCommandsEngine**: add/remove/mode/list
+    (real resolve on both sides in /add; Bale side via BaleBotGateway)
+  - `bridge/admin/system_cmds.py` — **SystemCommandsEngine**: status/whoami/logs
+  - `bridge/admin/control_cmds.py` — **ControlCommandsEngine**: pause/resume/test
+  - `bridge/admin/ops_cmds.py` — **OpsCommandsEngine**: access (real probes) +
+    promote (selfbot promotes the Bale bot)
+  - `bridge/admin/dash_cmds.py` — **DashCommandsEngine**: dashboard/passwd/dashuser
+  - `bridge/admin/probes.py` — compat probe wrappers
+  - `bridge/admin/facade.py` — **Admin**: auth guards + command dispatch + FSM-free
+    delegation; exact legacy surface (`handle`, `cmd_*`, `_parse`, `_resolve_*`)
+- Engines read dependencies **live through the facade**, so patching facade
+  attributes after construction (as the tests do: `admin.log_buffer`,
+  `admin.tg_bot_info`) still affects engine behavior
+- `bridge/admin.py` kept as a re-export shim (`HELP`, aliases, `_fmt_duration`…)
+- No behavior change; **260 tests green** (17 new engine tests), ruff clean
+
+[2.10.0]: https://github.com/parham7991/tg-bale-bridge/compare/v2.9.0...v2.10.0
+
 ## [2.9.0] - 2026-09-22
 
 ### Changed — 🧙‍♂️ installer wizard: modular engine package

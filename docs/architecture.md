@@ -38,6 +38,7 @@ flowchart LR
 | Bot-API clients | `bridge/bot_api.py` | Generic client for **both** Bale and Telegram Bot API: multipart uploads, file downloads, long-polling, `retry_after` handling |
 | Runtime settings | `bridge/store.py` | DB-backed config (accounts, admin, tokens) — `.env` shrinks to one token |
 | Web dashboard | `bridge/dashboard/` (package) | `app.py` assembly · `api.py` thin HTTP · `auth.py` AuthEngine (PBKDF2/sessions/lockout) · `context.py` RuntimeCtx · `engines/{status,pairs,control,logs,ops}` domain engines |
+| Admin package | `bridge/admin/` (package) | `types_map` aliases/HELP/parser · `surfaces` SurfacesEngine · `resolver` ResolverEngine (TG resolve + /id) · `pairs_cmds` PairsCommandsEngine · `system_cmds` SystemCommandsEngine · `control_cmds` ControlCommandsEngine · `ops_cmds` OpsCommandsEngine (access/promote) · `dash_cmds` DashCommandsEngine · `probes` compat · `facade` Admin |
 | Wizard package | `bridge/wizard/` (package) | `types_map` constants/extractors · `menu` MenuEngine · `accounts` AccountsEngine (Bale API builders + token check) · `pairing` PairingEngine (2-step pairing) · `checks` AccessReportEngine · `promote` PromoteEngine · `dashinfo` DashInfoEngine · `finish` FinishEngine (auto-restart) · `probes` compat functions · `facade` Wizard FSM |
 | Transfer package (heart) | `bridge/transfer/` (package) | `types_map` pure mappings (classification/content/entities/fingerprint) · `loopguard` LoopGuard (sent-ledger + fingerprints + echo suppression) · `albums` AlbumCollector (flush timers) · `queueing` QueueEngine (2 FIFOs + workers + pause) · `mirror_t2b` T2BEngine · `mirror_b2t` B2TEngine · `sync_edit` EditSyncEngine · `sync_delete` DeleteSyncEngine · `facade` Bridge |
 | TG selfbot package | `bridge/tguser/` (package) | `types_map` pure mappings · `session` TgSelfSession (client builder) · `gateway` TgSelfGateway (credentials/probe/username) · `login` TgLoginEngine (code+2FA) · `routing` TgEventRouter (Saved-Messages=admin) · `events` TgEventsEngine · `facade` TgSelfBot + `register()` |
@@ -50,7 +51,7 @@ flowchart LR
 | Log buffer | `bridge/logbuf.py` | In-memory ring buffer serving the `/logs` command |
 | Formatter | `bridge/formatter.py` | Telegram entities ⇄ Bale Markdown, UTF-16 offset math, renderers for polls/dice/venues/services |
 | Store | `bridge/db.py` | Channel pairs, message mapping (for replies/edits/deletes), loop-prevention ledger |
-| Admin | `bridge/admin.py` | `/add`, `/list`, `/mode`, `/remove`, `/test`, `/id`, `/status`, `/whoami`, `/pause`, `/resume`, `/logs` — the identical panel on 4 surfaces: Bale bot · Bale self-chat · TG control bot · TG Saved Messages |
+| Admin | `bridge/admin/` → `bridge/admin.py` (shim) | `/add`, `/list`, `/mode`, `/remove`, `/test`, `/id`, `/status`, `/whoami`, `/pause`, `/resume`, `/logs`, `/access`, `/promote`, `/dashboard`, `/passwd`, `/dashuser` — the identical panel on 4 surfaces. Since v2.10.0 implemented as the modular `bridge/admin/` engine package; `admin.py` only re-exports it |
 
 ## Data model
 

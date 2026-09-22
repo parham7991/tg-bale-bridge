@@ -77,7 +77,10 @@
 | `transfer/mirror_t2b.py` / `mirror_b2t.py` | 🔁 آینهٔ دوطرفه | همهٔ انواع محتوا + فالبک کامل + سقف‌ها |
 | `transfer/sync_edit.py` / `sync_delete.py` | ✏️🗑 ویرایش و حذف | دوطرفه + جایگزینی در خطا + مهار پژواک |
 | `transfer/loopguard.py` / `types_map.py` | 🛡 نگهبان لوپ | دفترچه ارسال‌شده، اثر انگشت، کلاه‌بندی |
-| `bridge/admin.py` | 🎛 موتور پنل | دستورات مدیریتی روی همهٔ سطوح |
+| **`bridge/admin/`** | 🎛 بستهٔ پنل ادمین | ↓ تفکیک کامل ↓ |
+| `admin/pairs_cmds.py` / `control_cmds.py` | 🔗 جفت‌ها و کنترل | add/list/mode/remove، pause/resume/test |
+| `admin/system_cmds.py` / `ops_cmds.py` / `dash_cmds.py` | 📊 وضعیت، عملیات، داشبورد | status/whoami/logs، access/promote، dashboard/passwd |
+| `admin/resolver.py` / `surfaces.py` / `types_map.py` | 🔧 شناسایی و نگاشت | resolve تلگرام، /id فوروارد، سطوح پنل، نام‌های مستعار |
 | **`bridge/wizard/`** | 🧙‍♂️ بستهٔ نصب (ویزارد) | ↓ تفکیک کامل ↓ |
 | `wizard/pairing.py` / `checks.py` | 🔗 جفت‌کردن و تست دسترسی | resolve دومرحله‌ای، انتخاب جهت، پروب واقعی |
 | `wizard/menu.py` / `accounts.py` / `promote.py` / `dashinfo.py` / `finish.py` | 🧩 بخش‌های نصب | منو، حساب‌های بله، ادمین‌کردن ربات، داشبورد، ری‌استارت |
