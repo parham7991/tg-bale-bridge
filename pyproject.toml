@@ -1,0 +1,29 @@
+[project]
+name = "tg-bale-bridge"
+version = "1.0.0"
+description = "Two-way Telegram ⇄ Bale (بله) channel sync bridge — mirror text, media, albums, edits and deletes."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Parham Khanmohammadi", email = "parham7991@users.noreply.github.com" }]
+keywords = ["telegram", "bale", "bridge", "sync", "mirror", "telethon", "bot", "messaging"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Communications :: Chat",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
