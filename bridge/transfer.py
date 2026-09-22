@@ -9,7 +9,7 @@ from pathlib import Path
 from telethon import types as tg_t
 
 from . import formatter as fmt
-from .bale_api import BaleAPI, BaleError
+from .bot_api import BotAPI, BotAPIError
 
 log = logging.getLogger("bridge")
 
@@ -23,13 +23,14 @@ def _fp(kind: str, text: str) -> str:
 
 
 class Bridge:
-    def __init__(self, tg, bale: BaleAPI, db, cfg, my_tg_id: int, bale_bot: dict):
+    def __init__(self, tg, bale: BotAPI, db, cfg, my_tg_id: int, bale_bot: dict):
         self.tg = tg
         self.bale = bale
         self.db = db
         self.cfg = cfg
         self.my_tg_id = int(my_tg_id)
         self.bale_bot = bale_bot or {}
+        self.paused = False
         self.q_tg: asyncio.Queue = asyncio.Queue()
         self.q_bale: asyncio.Queue = asyncio.Queue()
         self._albums_tg: dict = {}
@@ -60,6 +61,9 @@ class Bridge:
 
     async def _dispatch_tg(self, job):
         kind, payload = job
+        if self.paused:
+            log.debug("⏸ همگام‌سازی متوقف است — رویداد %s نادیده گرفته شد", kind)
+            return
         if kind == "new":
             await self._mirror_tg(payload)
         elif kind == "edit":
@@ -69,6 +73,9 @@ class Bridge:
 
     async def _dispatch_bale(self, job):
         kind, payload = job
+        if self.paused:
+            log.debug("⏸ همگام‌سازی متوقف است — رویداد %s نادیده گرفته شد", kind)
+            return
         if kind == "new":
             await self._mirror_bale(payload)
         elif kind == "edit":
@@ -262,53 +269,53 @@ class Bridge:
             if size <= self.cfg.MAX_BALE_PHOTO:
                 try:
                     return await b.send_photo(dst, path, caption=caption, reply_to=reply_to)
-                except BaleError as e:
+                except BotAPIError as e:
                     log.warning("sendPhoto failed (%s) — ارسال به‌صورت فایل", e)
             return await as_doc("⚠️ عکس به‌صورت فایل ارسال شد.")
 
         if kind == "video":
             try:
                 return await b.send_video(dst, path, caption=caption, reply_to=reply_to)
-            except BaleError:
+            except BotAPIError:
                 return await as_doc("⚠️ ویدیو به‌صورت فایل ارسال شد.")
 
         if kind == "animation":
             try:
                 return await b.send_animation(dst, path, caption=caption, reply_to=reply_to)
-            except BaleError:
+            except BotAPIError:
                 pass
             try:
                 return await b.send_video(dst, path, caption=caption, reply_to=reply_to)
-            except BaleError:
+            except BotAPIError:
                 return await as_doc("⚠️ گیف به‌صورت فایل ارسال شد.")
 
         if kind == "audio":
             try:
                 return await b.send_audio(dst, path, caption=caption, reply_to=reply_to)
-            except BaleError:
+            except BotAPIError:
                 return await as_doc()
 
         if kind == "voice":
             try:
                 return await b.send_voice(dst, path, caption=caption, reply_to=reply_to)
-            except BaleError:
+            except BotAPIError:
                 return await as_doc("⚠️ پیام صوتی به‌صورت فایل ارسال شد.")
 
         if kind == "sticker":
             try:
                 return await b.send_sticker(dst, path, reply_to=reply_to)
-            except BaleError:
+            except BotAPIError:
                 return await as_doc("⚠️ استیکر به‌صورت فایل ارسال شد.")
 
         if kind == "video_note":
             try:
                 return await b.send_video_note(dst, path, reply_to=reply_to)
-            except BaleError:
+            except BotAPIError:
                 pass
             try:
                 return await b.send_video(dst, path, caption="🎥 ویدیوی دایره‌ای",
                                           reply_to=reply_to)
-            except BaleError:
+            except BotAPIError:
                 return await as_doc("⚠️ ویدیوی دایره‌ای به‌صورت فایل ارسال شد.")
 
         return await as_doc()
@@ -357,7 +364,7 @@ class Bridge:
                 for (m, _k, _p, _c), s in zip(group, sent):
                     results.append((m, s["message_id"]))
                 sent_ok = True
-            except (BaleError, ValueError, TypeError) as e:
+            except (BotAPIError, ValueError, TypeError) as e:
                 log.warning("sendMediaGroup ناموفق (%s) — ارسال تکی", e)
 
         if not sent_ok:
@@ -709,7 +716,7 @@ class Bridge:
                     await self.bale.edit_message_text(o["chat"], o["msg"], body)
                 else:
                     await self.bale.edit_message_caption(o["chat"], o["msg"], body)
-            except BaleError as e:
+            except BotAPIError as e:
                 log.warning("ویرایش در بله ناموفق (%s) — جایگزینی پیام", e)
                 try:
                     await self.bale.delete_message(o["chat"], o["msg"])
@@ -763,6 +770,6 @@ class Bridge:
                     continue
                 try:
                     await self.bale.delete_message(o["chat"], o["msg"])
-                except BaleError as e:
+                except BotAPIError as e:
                     log.warning("حذف در بله ناموفق: %s", e)
                 self.db.remove_map_row(o["row_id"])

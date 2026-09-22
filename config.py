@@ -41,6 +41,12 @@ BALE_TOKEN = os.getenv("BALE_TOKEN", "").strip()
 BALE_API_BASE = os.getenv("BALE_API_BASE", "https://tapi.bale.ai").rstrip("/")
 ADMIN_BALE_ID = _int("ADMIN_BALE_ID")
 
+# --- بات مدیریت تلگرام (اختیاری) ---
+# توکن بات تلگرام (از @BotFather) برای مدیریت سلف‌بات از راه دور
+TG_BOT_TOKEN = os.getenv("TG_BOT_TOKEN", "").strip()
+TG_BOT_API_BASE = os.getenv("TG_BOT_API_BASE", "https://api.telegram.org").rstrip("/")
+ADMIN_TG_ID = _int("ADMIN_TG_ID")
+
 # --- عمومی ---
 ALBUM_DELAY = _float("ALBUM_DELAY", 0.9)
 BALE_POLL_TIMEOUT = _int("BALE_POLL_TIMEOUT", 30) or 30

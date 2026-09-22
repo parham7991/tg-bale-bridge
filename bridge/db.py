@@ -239,3 +239,10 @@ class DB:
             self._conn.execute("DELETE FROM sent WHERE created_at<?", (cutoff,))
             self._conn.execute("DELETE FROM sent_fp WHERE created_at<?", (cutoff,))
             self._conn.commit()
+
+    # ---------- آمار ----------
+    def stats(self) -> dict:
+        with self._lock:
+            pairs = self._conn.execute("SELECT COUNT(*) AS n FROM pairs").fetchone()["n"]
+            mapped = self._conn.execute("SELECT COUNT(*) AS n FROM msg_map").fetchone()["n"]
+        return {"pairs": pairs, "mapped": mapped}

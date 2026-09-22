@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-09-22
+
+### Added
+- 🤖 **Telegram control bot** — manage the self-bot remotely via a Telegram bot
+  (`TG_BOT_TOKEN` + `ADMIN_TG_ID`), powered by the same command panel
+- `/whoami` — identity of all three accounts (self, Bale bot, control bot)
+- `/pause` / `/resume` — temporary global pause of mirroring (persisted across restarts)
+- `/logs [n]` — live log tail from the running instance (ring buffer)
+- `/status` upgraded: pause state, mapped-message counter, uptime
+- Chat-ID discovery now understands modern Bot API `forward_origin` payloads
+- Generic `BotAPI` client (renamed from `BaleAPI`) — one client for Bale *and* Telegram Bot API
+
+### Changed
+- `bridge/bale_api.py` → `bridge/bot_api.py` (`BotAPI`, `BotAPIError`)
+
+[1.1.0]: https://github.com/parham7991/tg-bale-bridge/compare/v1.0.0...v1.1.0
+
 ## [1.0.0] - 2026-09-22
 
 ### Added

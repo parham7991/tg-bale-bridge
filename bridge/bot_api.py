@@ -11,7 +11,7 @@ import aiohttp
 log = logging.getLogger("bale")
 
 
-class BaleError(Exception):
+class BotAPIError(Exception):
     def __init__(self, description: str, error_code: int = 0, parameters=None):
         super().__init__(description)
         self.description = description
@@ -19,7 +19,7 @@ class BaleError(Exception):
         self.parameters = parameters or {}
 
 
-class BaleAPI:
+class BotAPI:
     def __init__(self, token: str, base: str = "https://tapi.bale.ai"):
         self.token = token
         self.base = base.rstrip("/")
@@ -73,7 +73,7 @@ class BaleAPI:
                 if attempt < 2:
                     await asyncio.sleep(1.5 * (attempt + 1))
                     continue
-                raise BaleError(f"خطای شبکه در {method}: {e}") from e
+                raise BotAPIError(f"خطای شبکه در {method}: {e}") from e
 
             if payload.get("ok"):
                 return payload.get("result")
@@ -86,9 +86,9 @@ class BaleAPI:
                 log.warning("rate limit on %s — retry after %ss", method, retry_after)
                 await asyncio.sleep(float(retry_after) + 0.5)
                 continue
-            raise BaleError(desc, code, resp_params)
+            raise BotAPIError(desc, code, resp_params)
 
-        raise BaleError(f"{method} پس از چند تلاش ناموفق بود")
+        raise BotAPIError(f"{method} پس از چند تلاش ناموفق بود")
 
     # ---------- متدهای عمومی ----------
     async def get_me(self):
@@ -108,7 +108,7 @@ class BaleAPI:
     async def send_chat_action(self, chat_id, action: str = "typing"):
         try:
             return await self.call("sendChatAction", {"chat_id": chat_id, "action": action})
-        except BaleError:
+        except BotAPIError:
             return None
 
     async def edit_message_text(self, chat_id, message_id: int, text: str):
@@ -205,7 +205,7 @@ class BaleAPI:
         info = await self.get_file(file_id)
         file_path = info.get("file_path")
         if not file_path:
-            raise BaleError("file_path در پاسخ getFile نبود")
+            raise BotAPIError("file_path در پاسخ getFile نبود")
         session = await self._get_session()
         dest = Path(dest)
         async with session.get(self.file_url(file_path)) as resp:
@@ -228,7 +228,7 @@ class BaleAPI:
         while True:
             try:
                 updates = await self.get_updates(offset=offset, timeout=timeout)
-            except BaleError as e:
+            except BotAPIError as e:
                 log.error("getUpdates failed: %s", e)
                 await asyncio.sleep(5)
                 continue

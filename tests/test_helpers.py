@@ -2,7 +2,7 @@
 from telethon import types as tg_t
 
 from bridge.admin import Admin
-from bridge.bale_api import BaleAPI
+from bridge.bot_api import BotAPI
 from bridge.transfer import Bridge, _fp
 
 
@@ -65,14 +65,19 @@ class TestBaleContent:
         assert Bridge._bale_content({"contact": {"phone_number": "9"}})["kind"] == "contact"
 
 
-class TestBaleAPI:
+class TestBotAPI:
     def test_urls(self):
-        api = BaleAPI("123:abc")
+        api = BotAPI("123:abc")
         assert api.url("getMe") == "https://tapi.bale.ai/bot123:abc/getMe"
         assert api.file_url("fp") == "https://tapi.bale.ai/file/bot123:abc/fp"
 
+    def test_telegram_base(self):
+        api = BotAPI("TOK", base="https://api.telegram.org")
+        assert api.url("getMe") == "https://api.telegram.org/botTOK/getMe"
+        assert api.file_url("f") == "https://api.telegram.org/file/botTOK/f"
+
     def test_custom_base(self):
-        api = BaleAPI("t", base="https://tapi.bale.ai/business/")
+        api = BotAPI("t", base="https://tapi.bale.ai/business/")
         assert api.url("sendMessage").startswith("https://tapi.bale.ai/business/bott/sendMessage")
 
 

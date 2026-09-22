@@ -14,7 +14,7 @@ sys.path.insert(0, str(ROOT))
 from telethon import types as tg_t  # noqa: E402
 
 from bridge.admin import Admin  # noqa: E402
-from bridge.bale_api import BaleError  # noqa: E402
+from bridge.bot_api import BotAPIError  # noqa: E402
 from bridge.db import DB  # noqa: E402
 from bridge.transfer import Bridge  # noqa: E402
 
@@ -36,6 +36,7 @@ class Cfg:
         self.LIMIT_CAPTION = 4096
         self.LIMIT_CAPTION_GROUP = 1024
         self.ADMIN_BALE_ID = 42
+        self.ADMIN_TG_ID = 777
 
 
 class FakeMsg:
@@ -61,7 +62,7 @@ class FakeSentMsg:
 
 
 class FakeBale:
-    """ضبط فراخوانی‌های BaleAPI."""
+    """ضبط فراخوانی‌های BotAPI."""
 
     def __init__(self):
         self.calls = []
@@ -84,7 +85,7 @@ class FakeBale:
 
     async def send_sticker(self, chat, path, reply_to=None):
         self.calls.append(("sendSticker", chat, {}))
-        raise BaleError("sendSticker ناموفق")  # شبیه‌سازی متد پشتیبانی‌نشده
+        raise BotAPIError("sendSticker ناموفق")  # شبیه‌سازی متد پشتیبانی‌نشده
 
     async def send_voice(self, chat, path, caption=None, reply_to=None):
         return self._ret("sendVoice", chat, caption=caption)
@@ -93,7 +94,7 @@ class FakeBale:
         return self._ret("sendVideo", chat, caption=caption)
 
     async def send_video_note(self, chat, path, reply_to=None):
-        raise BaleError("sendVideoNote در بله نیست")
+        raise BotAPIError("sendVideoNote در بله نیست")
 
     async def send_animation(self, chat, path, caption=None, reply_to=None):
         return self._ret("sendAnimation", chat, caption=caption)
@@ -109,7 +110,7 @@ class FakeBale:
 
     async def send_media_group(self, chat, items, reply_to=None):
         if self.fail_group:
-            raise BaleError("sendMediaGroup fail")
+            raise BotAPIError("sendMediaGroup fail")
         out = []
         for item in items:
             out.append(self._ret("sendMediaGroup-item", chat, item=item[0]))
@@ -164,6 +165,15 @@ class FakeTg:
             )
         raise ValueError("not found")
 
+    async def get_me(self):
+        class Me:
+            id = 999
+            username = "selfuser"
+            first_name = "سلف"
+            last_name = None
+
+        return Me()
+
     async def get_messages(self, entity, ids):
         outer = self
 
@@ -211,6 +221,7 @@ def admin(db, bale, tg, bridge):
 def _admin_cfg():
     class A:
         ADMIN_BALE_ID = 42
+        ADMIN_TG_ID = 777
     return A()
 
 

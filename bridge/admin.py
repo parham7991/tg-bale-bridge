@@ -1,8 +1,9 @@
-"""دستورات مدیریتی — از داخل ربات بله یا «پیام‌های ذخیره‌شده» تلگرام."""
+"""دستورات مدیریتی — ربات بله، بات مدیریت تلگرام یا «پیام‌های ذخیره‌شده»."""
 from __future__ import annotations
 
 import logging
 import re
+import time
 
 from telethon import utils as tg_utils
 
@@ -27,6 +28,10 @@ CMD_ALIASES = {
     "test": "test", "تست": "test",
     "status": "status", "وضعیت": "status",
     "id": "id", "شناسه": "id",
+    "whoami": "whoami", "هویت": "whoami", "من": "whoami",
+    "pause": "pause", "توقف": "pause", "مکث": "pause", "قفل": "pause",
+    "resume": "resume", "ادامه": "resume", "ازسرگیری": "resume",
+    "logs": "logs", "لاگ": "logs", "لاگ‌ها": "logs",
 }
 
 HELP = """🤖 پل همگام‌سازی تلگرام ⇄ بله
@@ -44,23 +49,34 @@ HELP = """🤖 پل همگام‌سازی تلگرام ⇄ بله
 ▫️ /remove <شناسه> — حذف یک جفت
 ▫️ /test <شناسه> — ارسال پیام آزمایشی
 ▫️ /id — در پاسخ/فوروارد پیام، شناسه چت را می‌گوید (برای /add)
-▫️ /status — وضعیت ربات
+▫️ /status — وضعیت ربات و سلف‌بات
+▫️ /whoami — هویت حساب‌ها (سلف، بله، بات مدیریت)
+▫️ /pause · /resume — توقف/ادامهٔ موقت همگام‌سازی
+▫️ /logs [تعداد] — آخرین خطوط لاگ (پیش‌فرض ۱۵)
+▫️ /id — در پاسخ/فوروارد پیام، شناسه چت را می‌گوید (برای /add)
 
 💡 برای فهمیدن شناسه عددی کانال‌ها کافی است یک پیام از آن‌ها را اینجا فوروارد کنید."""
 
 MINIMAL_HELP = """🤖 پل تلگرام ⇄ بله آماده است.
 یک پیام از کانال تلگرام یا بله را فوروارد کنید تا شناسه‌اش را بگویم، بعد:
-/add <کانال_تلگرام> <کانال_بله> [both|tg2bale|bale2tg]"""
+/add <کانال_تلگرام> <کانال_بله> [both|tg2bale|bale2tg]
+
+دستورات: /help · /list · /status · /whoami · /pause · /resume · /logs"""
 
 
 class Admin:
-    def __init__(self, db, bale, tg, bridge, cfg):
+    def __init__(self, db, bale, tg, bridge, cfg,
+                 log_buffer=None, started_at=None, tg_bot_info=None):
         self.db = db
         self.bale = bale
         self.tg = tg
         self.bridge = bridge
         self.cfg = cfg
         self.bale_bot = bridge.bale_bot
+        self.log_buffer = log_buffer
+        self.started_at = started_at or time.time()
+        self.tg_bot_info = tg_bot_info or {}
+        self._current_user_id = None
 
     # ---------------------------------------------------------- ورودی
     async def handle(self, platform: str, chat_id, user_id, text: str, msg=None) -> str | None:
@@ -74,6 +90,15 @@ class Admin:
             if int(user_id) != int(self.cfg.ADMIN_BALE_ID):
                 return None
 
+        if platform == "tgbot":
+            if not getattr(self.cfg, "ADMIN_TG_ID", 0):
+                return (f"🔐 آیدی عددی شما در تلگرام: {user_id}\n\n"
+                        "این مقدار را در فایل .env در کلید ADMIN_TG_ID بگذارید "
+                        "و برنامه را ری‌استارت کنید تا دستورات مدیریتی باز شود.")
+            if int(user_id) != int(self.cfg.ADMIN_TG_ID):
+                return None
+
+        self._current_user_id = user_id
         cmd, args = self._parse(text)
         if cmd is None:
             if text.startswith("/"):
@@ -108,21 +133,66 @@ class Admin:
         return HELP
 
     async def cmd_status(self, platform, args, msg):
-        pairs = self.db.list_pairs()
+        stats = self.db.stats()
         me = self.bale_bot.get("username") or self.bale_bot.get("id") or "?"
         try:
             tg_me = await self.tg.get_me()
             tg_name = f"@{tg_me.username}" if tg_me.username else tg_me.first_name
         except Exception:
             tg_name = "?"
+        bot_name = self.tg_bot_info.get("username") or "غیرفعال"
+        state = "⏸ متوقف (همگام‌سازی خاموش)" if self.bridge.paused else "▶️ در حال همگام‌سازی"
+        uptime = _fmt_duration(time.time() - self.started_at)
         lines = [
             "🩺 وضعیت پل",
-            f"▫️ حساب تلگرام: {tg_name}",
+            f"▫️ حالت: {state}",
+            f"▫️ حساب تلگرام (سلف): {tg_name}",
             f"▫️ ربات بله: {me}",
-            f"▫️ تعداد جفت‌ها: {len(pairs)}",
-            "▫️ همگام‌سازی: متن/رسانه/آلبوم/فوروارد/ریپلای/ویرایش + حذف (تلگرام→بله)",
+            f"▫️ بات مدیریت تلگرام: {bot_name}",
+            f"▫️ جفت‌های کانال: {stats['pairs']}",
+            f"▫️ پیام‌های همگام‌شده (نگاشت‌شده): {stats['mapped']}",
+            f"▫️ زمان فعالیت: {uptime}",
+            "▫️ پوشش: متن/رسانه/آلبوم/فوروارد/ریپلای/ویرایش + حذف (تلگرام→بله)",
         ]
         return "\n".join(lines)
+
+    async def cmd_whoami(self, platform, args, msg):
+        try:
+            tg_me = await self.tg.get_me()
+            tg_name = f"@{tg_me.username}" if tg_me.username else tg_me.first_name
+            tg_line = f"{tg_name} (id={tg_me.id})"
+        except Exception:
+            tg_line = "؟"
+        bale_line = f"@{self.bale_bot.get('username')} (id={self.bale_bot.get('id')})"
+        bot_line = (f"@{self.tg_bot_info.get('username')} (id={self.tg_bot_info.get('id')})"
+                    if self.tg_bot_info else "غیرفعال")
+        return ("👤 هویت\n"
+                f"▫️ شما (ادمین): {self._current_user_id}\n"
+                f"▫️ سلف‌بات / حساب تلگرام: {tg_line}\n"
+                f"▫️ ربات بله: {bale_line}\n"
+                f"▫️ بات مدیریت تلگرام: {bot_line}")
+
+    async def cmd_pause(self, platform, args, msg):
+        self.bridge.paused = True
+        self.db.set_meta("paused", "1")
+        return ("⏸ همگام‌سازی متوقف شد.\n"
+                "پیام‌های جدید تا زمان /resume منتقل نمی‌شوند (نگاشت‌های قبلی حفظ می‌شوند).")
+
+    async def cmd_resume(self, platform, args, msg):
+        self.bridge.paused = False
+        self.db.set_meta("paused", "0")
+        return "▶️ همگام‌سازی از سر گرفته شد."
+
+    async def cmd_logs(self, platform, args, msg):
+        if not self.log_buffer:
+            return "لاگ در دسترس نیست."
+        n = 15
+        if args and args[0].isdigit():
+            n = int(args[0])
+        lines = self.log_buffer.tail(n)
+        if not lines:
+            return "هنوز لاگی ثبت نشده."
+        return "📜 آخرین لاگ‌ها:\n" + "\n".join(lines)
 
     async def cmd_add(self, platform, args, msg):
         if len(args) < 2:
@@ -208,8 +278,16 @@ class Admin:
         if not msg:
             return None
         try:
-            if platform == "bale":
+            if platform in ("bale", "tgbot"):
                 chat = msg.get("forward_from_chat")
+                user = msg.get("forward_from")
+                origin = msg.get("forward_origin") or {}
+                if not chat and origin.get("chat"):
+                    chat = origin.get("chat")
+                if not user and origin.get("sender_user"):
+                    user = origin.get("sender_user")
+                if not chat and not user and origin.get("sender_user_name"):
+                    return f"ℹ️ فرستنده: {origin['sender_user_name']}"
                 if chat:
                     uname = f"@{chat['username']}" if chat.get("username") else "—"
                     return (f"🆔 شناسه کانال مبدأ:\n"
@@ -217,7 +295,6 @@ class Admin:
                             f"▫️ آیدی عددی: {chat['id']}\n"
                             f"▫️ یوزرنیم: {uname}\n\n"
                             f"مثال: /add <کانال_تلگرام> {chat['id']}")
-                user = msg.get("forward_from")
                 if user:
                     uname = f"@{user['username']}" if user.get("username") else "—"
                     return (f"🆔 شناسه کاربر مبدأ:\n▫️ آیدی عددی: {user['id']}\n"
@@ -286,3 +363,17 @@ class Admin:
         username = (chat.get("username") or "").lstrip("@")
         label = chat.get("title") or chat.get("first_name") or username or ""
         return str(chat.get("id")), label, username
+
+
+def _fmt_duration(seconds: float) -> str:
+    seconds = int(max(0, seconds))
+    d, rem = divmod(seconds, 86400)
+    h, rem = divmod(rem, 3600)
+    m, s_ = divmod(rem, 60)
+    parts = []
+    if d:
+        parts.append(f"{d}d")
+    if h:
+        parts.append(f"{h}h")
+    parts.append(f"{m}m")
+    return " ".join(parts)
