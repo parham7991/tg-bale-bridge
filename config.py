@@ -40,6 +40,11 @@ TG_PHONE = os.getenv("TG_PHONE", "").strip()
 BALE_TOKEN = os.getenv("BALE_TOKEN", "").strip()
 BALE_API_BASE = os.getenv("BALE_API_BASE", "https://tapi.bale.ai").rstrip("/")
 ADMIN_BALE_ID = _int("ADMIN_BALE_ID")
+# "bot"  → ربات رسمی بله (برای نوشتن در کانال باید ادمین شود — اغلب ناممکن!)
+# "user" → سلف‌بات بله (aiobale) با حساب کاربری خودتان — بدون نیاز به اد کردن ربات
+BALE_MODE = os.getenv("BALE_MODE", "bot").strip().lower()
+BALE_SESSION = os.getenv("BALE_SESSION", str(DATA_DIR / "session")).strip()
+BALE_PHONE = os.getenv("BALE_PHONE", "").strip()
 
 # --- بات مدیریت تلگرام (اختیاری) ---
 # توکن بات تلگرام (از @BotFather) برای مدیریت سلف‌بات از راه دور
@@ -66,6 +71,16 @@ def validate() -> list[str]:
     problems = []
     if not TG_API_ID or not TG_API_HASH:
         problems.append("TG_API_ID / TG_API_HASH تنظیم نشده (از my.telegram.org بگیرید)")
-    if not BALE_TOKEN:
+    if BALE_MODE not in ("bot", "user"):
+        problems.append(f'BALE_MODE باید "bot" یا "user" باشد (الان: {BALE_MODE!r})')
+    if BALE_MODE == "bot" and not BALE_TOKEN:
         problems.append("BALE_TOKEN تنظیم نشده (از @botfather بله بگیرید)")
+    if BALE_MODE == "user":
+        _sess = Path(BALE_SESSION)
+        _sess = _sess if _sess.suffix == ".bale" else _sess.with_suffix(".bale")
+        if not _sess.exists():
+            problems.append(
+                f"نشست سلف‌بات بله پیدا نشد ({_sess}) — "
+                "ابتدا یک بار python login_bale.py را اجرا کنید"
+            )
     return problems

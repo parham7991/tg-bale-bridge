@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-09-22
+
+### Added
+- 🕵️ **Bale selfbot mode (`BALE_MODE=user`)** — post to Bale channels with your own user
+  account via [`aiobale`](https://github.com/aminmadaniofficial/aiobale); no need to add
+  any bot as channel admin (which new Bale versions refuse anyway)
+- `bridge/bale_user.py` — `BaleUserAPI`, a drop-in `BotAPI`-compatible adapter over
+  aiobale: normalizes internal messages to Bot-API shape (media classified by mime),
+  caches dates/access-hashes (persistent in `meta`) for delete & download, resolves
+  `@usernames`, degrades sticker/video-note/location/contact/poll gracefully
+- `login_bale.py` — one-time interactive phone + SMS login; session saved to
+  `data/session.bale`, no password stored
+- **Bale→Telegram delete sync** in user mode — aiobale delivers `message_deleted`
+  events (impossible with the Bot API); routed as a `deleted_messages` pseudo-update
+  to the new `Bridge.on_bale_delete` worker job, with two-way echo guards
+- Config: `BALE_MODE` (bot/user), `BALE_SESSION`, `BALE_PHONE`; `BALE_TOKEN` is now
+  optional in user mode
+- README troubleshooting: "the Bale bot can't be added to a channel" — mobile/web
+  workarounds plus the definitive selfbot fix
+- Tests: 13 new offline tests (`tests/test_bale_user.py`) — normalization, delete
+  events, send fallbacks, delete-sync (93 total)
+
+### Changed
+- `main.py` wires either the Bale bot or the selfbot; in user mode private chats are
+  answered **only** to `ADMIN_BALE_ID` (a human account must never auto-reply to
+  strangers)
+- Honest-limitations section rewritten per mode (20 MB getFile cap and 50/10 MB
+  upload caps apply to bot mode only)
+
+[1.2.0]: https://github.com/parham7991/tg-bale-bridge/compare/v1.1.0...v1.2.0
+
 ## [1.1.0] - 2026-09-22
 
 ### Added

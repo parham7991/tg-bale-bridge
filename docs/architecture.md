@@ -36,6 +36,7 @@ flowchart LR
 | Job queues | `bridge/transfer.py` | Two FIFO queues (TG→Bale, Bale→TG) keep ordering deterministic |
 | Transfer engine | `bridge/transfer.py` | Media classification, download/re-upload, albums, replies, forwards, edits, deletes |
 | Bot-API clients | `bridge/bot_api.py` | Generic client for **both** Bale and Telegram Bot API: multipart uploads, file downloads, long-polling, `retry_after` handling |
+| Bale selfbot adapter | `bridge/bale_user.py` | `BALE_MODE=user`: BotAPI-compatible façade over `aiobale` (logged-in user account). Normalizes internal messages to Bot-API shape and surfaces `message_deleted` events as `deleted_messages` updates — Bale→Telegram delete sync |
 | TG control bot | `bridge/tg_bot.py` | Remote management of the self-bot via a Telegram bot (same command panel) |
 | Log buffer | `bridge/logbuf.py` | In-memory ring buffer serving the `/logs` command |
 | Formatter | `bridge/formatter.py` | Telegram entities ⇄ Bale Markdown, UTF-16 offset math, renderers for polls/dice/venues/services |

@@ -43,14 +43,22 @@ async def main():
         sys.exit(1)
 
     db = DB(cfg.DB_PATH)
-    bale = BotAPI(cfg.BALE_TOKEN, cfg.BALE_API_BASE)
+    if cfg.BALE_MODE == "user":
+        from bridge.bale_user import BaleUserAPI
+
+        bale = BaleUserAPI(
+            session_file=cfg.BALE_SESSION, phone_number=cfg.BALE_PHONE or None, db=db)
+        log.info("حالت بله: سلف‌بات (حساب کاربری) با aiobale — بدون نیاز به اد کردن ربات")
+    else:
+        bale = BotAPI(cfg.BALE_TOKEN, cfg.BALE_API_BASE)
 
     try:
         bale_me = await bale.get_me()
     except BotAPIError as e:
-        log.error("اتصال به بله ناموفق — توکن ربات را بررسی کنید: %s", e)
+        log.error("اتصال به بله ناموفق — توکن/نشست را بررسی کنید: %s", e)
         sys.exit(1)
-    log.info("ربات بله: @%s (id=%s)", bale_me.get("username"), bale_me.get("id"))
+    label = "حساب بله (سلف)" if cfg.BALE_MODE == "user" else "ربات بله"
+    log.info("%s: @%s (id=%s)", label, bale_me.get("username"), bale_me.get("id"))
 
     tg = TelegramClient(str(cfg.SESSION_PATH), cfg.TG_API_ID, cfg.TG_API_HASH)
     await tg.start(phone=cfg.TG_PHONE or None)
@@ -67,7 +75,11 @@ async def main():
     register_tg(tg, bridge, admin, me.id)
 
     if not cfg.ADMIN_BALE_ID:
-        log.warning("ADMIN_BALE_ID تنظیم نشده — در ربات بله /start بزنید")
+        if cfg.BALE_MODE == "user" and not cfg.BALE_TOKEN:
+            log.warning("ADMIN_BALE_ID تنظیم نشده — پنل ادمین فقط از تلگرام در دسترس است "
+                        "(بات مدیریتی / Saved Messages)")
+        else:
+            log.warning("ADMIN_BALE_ID تنظیم نشده — در ربات بله /start بزنید")
 
     pairs = db.list_pairs()
     log.info("%d جفت کانال فعال است", len(pairs))
@@ -91,6 +103,12 @@ async def main():
 
     async def on_bale_update(upd, offset):
         db.set_meta("bale_offset", str(offset))
+        dm = upd.get("deleted_messages")
+        if dm is not None:
+            # فقط سلف‌بات بله (aiobale) رویداد حذف می‌دهد → حذف بله→تلگرام
+            await bridge.on_bale_delete(
+                (dm.get("chat") or {}).get("id"), dm.get("message_ids") or [])
+            return
         m = upd.get("message") or upd.get("channel_post")
         em = upd.get("edited_message") or upd.get("edited_channel_post")
         if em:
@@ -101,6 +119,10 @@ async def main():
         chat = m.get("chat") or {}
         if chat.get("type") == "private":
             uid = (m.get("from") or {}).get("id")
+            if cfg.BALE_MODE == "user":
+                # سلف‌بات = حساب انسانی؛ هرگز به ناشناس‌ها پاسخ خودکار نده
+                if not cfg.ADMIN_BALE_ID or int(uid or 0) != int(cfg.ADMIN_BALE_ID):
+                    return
             text = m.get("text") or ""
             is_forward = bool(m.get("forward_from_chat") or m.get("forward_from"))
             if text.strip() or is_forward:

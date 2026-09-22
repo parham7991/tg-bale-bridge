@@ -80,6 +80,8 @@ class Bridge:
             await self._mirror_bale(payload)
         elif kind == "edit":
             await self._process_bale_edit(payload)
+        elif kind == "delete":
+            await self._process_bale_delete(payload[0], payload[1])
 
     # ================================================================ رویدادهای تلگرام
     async def on_tg_new(self, msg):
@@ -118,6 +120,19 @@ class Bridge:
             ids.append(int(mid))
         if ids:
             await self.q_tg.put(("delete", (chat_key, ids)))
+
+    async def on_bale_delete(self, chat_id, deleted_ids):
+        """حذف پیام در بله — فقط حالت سلف‌بات (aiobale) این رویداد را می‌دهد."""
+        chat_key = str(chat_id)
+        ids = []
+        for mid in deleted_ids or ():
+            mid = int(mid)
+            if (chat_key, mid) in self._ignore_bale:
+                self._ignore_bale.discard((chat_key, mid))
+                continue
+            ids.append(mid)
+        if ids:
+            await self.q_bale.put(("delete", (chat_key, ids)))
 
     # ================================================================ رویدادهای بله
     async def queue_bale_msg(self, m: dict):
@@ -760,6 +775,23 @@ class Bridge:
                     log.exception("جایگزینی پیام ویرایش‌شده ناموفق")
 
     # ================================================================ حذف
+    async def _process_bale_delete(self, chat_key, ids):
+        """حذف در بله → حذف پیام معادل در تلگرام (حذف دوطرفه، فقط با سلف‌بات)."""
+        for mid in ids:
+            for o in self.db.other_side("bale", chat_key, mid):
+                if o["platform"] != "tg":
+                    continue
+                pair = self.db.get_pair(o["pair_id"])
+                if not pair or pair["mode"] == "tg2bale":
+                    continue
+                self._ignore_tg.add((str(o["chat"]), int(o["msg"])))
+                try:
+                    await self.tg.delete_messages(int(o["chat"]), [int(o["msg"])])
+                except Exception as e:
+                    self._ignore_tg.discard((str(o["chat"]), int(o["msg"])))
+                    log.warning("حذف در تلگرام ناموفق: %s", e)
+                self.db.remove_map_row(o["row_id"])
+
     async def _process_tg_delete(self, chat_key, ids):
         for mid in ids:
             for o in self.db.other_side("tg", chat_key, mid):
@@ -768,8 +800,12 @@ class Bridge:
                 pair = self.db.get_pair(o["pair_id"])
                 if not pair or pair["mode"] == "bale2tg":
                     continue
+                if getattr(self.bale, "has_delete_events", False):
+                    # سلف‌بات رویداد حذف برمی‌گرداند — پژواک را بی‌اثر کن
+                    self._ignore_bale.add((str(o["chat"]), int(o["msg"])))
                 try:
                     await self.bale.delete_message(o["chat"], o["msg"])
                 except BotAPIError as e:
+                    self._ignore_bale.discard((str(o["chat"]), int(o["msg"])))
                     log.warning("حذف در بله ناموفق: %s", e)
                 self.db.remove_map_row(o["row_id"])
