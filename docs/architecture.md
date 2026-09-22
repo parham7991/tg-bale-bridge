@@ -32,12 +32,13 @@ flowchart LR
 
 | Component | File | Responsibility |
 |---|---|---|
-| Telethon session | `bridge/tg_user.py` | Receives `NewMessage` / `MessageEdited` / `MessageDeleted`; routes Saved-Messages to admin, everything else to the engine |
+| Telethon session | `bridge/tguser/` → `bridge/tg_user.py` (shim) | Receives `NewMessage` / `MessageEdited` / `MessageDeleted`; routes Saved-Messages to admin, everything else to the engine. Since v2.7.0 implemented as the modular `bridge/tguser/` engine package; `tg_user.py` only re-exports it |
 | Job queues | `bridge/transfer.py` | Two FIFO queues (TG→Bale, Bale→TG) keep ordering deterministic |
 | Transfer engine | `bridge/transfer.py` | Media classification, download/re-upload, albums, replies, forwards, edits, deletes |
 | Bot-API clients | `bridge/bot_api.py` | Generic client for **both** Bale and Telegram Bot API: multipart uploads, file downloads, long-polling, `retry_after` handling |
 | Runtime settings | `bridge/store.py` | DB-backed config (accounts, admin, tokens) — `.env` shrinks to one token |
 | Web dashboard | `bridge/dashboard/` (package) | `app.py` assembly · `api.py` thin HTTP · `auth.py` AuthEngine (PBKDF2/sessions/lockout) · `context.py` RuntimeCtx · `engines/{status,pairs,control,logs,ops}` domain engines |
+| TG selfbot package | `bridge/tguser/` (package) | `types_map` pure mappings · `session` TgSelfSession (client builder) · `gateway` TgSelfGateway (credentials/probe/username) · `login` TgLoginEngine (code+2FA) · `routing` TgEventRouter (Saved-Messages=admin) · `events` TgEventsEngine · `facade` TgSelfBot + `register()` |
 | TG control-bot package | `bridge/tgbot/` (package) | `types_map` pure mappings · `session` TgBotSession (identity+offset+listen) · `claim` ClaimEngine (first-/start-claims-admin) · `guards` GuardsEngine · `routing` TgBotEventRouter · `facade` TgAdminBot compat façade |
 | Bale logic package | `bridge/bale/` (package) | `types_map` pure mappings · `session` BaleSession (client+caches) · `resolver`/`normalize`/`events`/`sender`/`editor`/`files`/`admin_ops`/`profile` engines · `gateway` BaleBotGateway (resolve+probe) · `routing` BaleEventRouter · `login` BaleLoginEngine (phone auth, interactive login, client builder) · `facade` BaleUserAPI compat façade |
 

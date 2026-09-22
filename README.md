@@ -78,7 +78,9 @@
 | **`bridge/tgbot/`** | ✈️ بستهٔ بات تلگرام | ↓ تفکیک کامل ↓ |
 | `tgbot/session.py` / `routing.py` | 🎧 نشست و مسیریابی | هویت + آفست، روتر رویدادها |
 | `tgbot/claim.py` / `guards.py` | 👑 ادمین خودکار و نگهبان | اولین /start ادمین می‌شود؛ رد غیرادمین |
-| `bridge/tg_user.py` | ✈️ سلف تلگرام | Telethon — حساب کاربری |
+| **`bridge/tguser/`** | ✈️ بستهٔ سلف تلگرام | ↓ تفکیک کامل ↓ |
+| `tguser/session.py` / `events.py` / `routing.py` | 🎧 نشست، رویدادها، مسیریابی | کلاینت Telethon؛ ذخیره‌شده‌ها=پنل، بقیه=پل |
+| `tguser/login.py` / `gateway.py` | 🔐 ورود و دروازه | کد + رمز دوم؛ آبشار اعتبارنامه، پروب دسترسی، resolve |
 | **`bridge/bale/`** | 🟡 بستهٔ بله (سلف) | ↓ تفکیک کامل ↓ |
 | `bale/session.py` + `events.py` | 🎧 نشست و رویدادها | کلاینت aiobale، کش‌ها، listen، رویداد حذف |
 | `bale/sender.py` / `editor.py` / `files.py` | 📤 ارسال/ویرایش/فایل | همهٔ send_* با فالبک کامل، ویرایش/حذف، دانلود |

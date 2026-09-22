@@ -15,7 +15,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-import re
 import sys
 import time
 from pathlib import Path
@@ -28,21 +27,17 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def _tg_username(ref: str) -> str:
-    ref = (ref or "").strip()
-    m = re.search(r"(?:t\.me/|@)([A-Za-z0-9_]{3,})", ref)
-    return m.group(1) if m else ref.lstrip("@")
+    """از دروازهٔ سلف تلگرام — همان منطق، یک‌جا نگهداری می‌شود."""
+    from .tguser import TgSelfGateway
+
+    return TgSelfGateway.normalize_username(ref)
 
 
 async def probe_tg_access(tg_client, chat_id) -> tuple[bool, str]:
-    """آیا حساب تلگرام به کانال دسترسی دارد؟ (خواندن آخرین پیام)"""
-    try:
-        try:
-            msgs = await tg_client.get_messages(int(chat_id), limit=1)
-        except TypeError:
-            msgs = await tg_client.get_messages(int(chat_id), ids=1)
-        return True, "✔ دسترسی دارد" if msgs is not None else "✔"
-    except Exception as e:
-        return False, f"✘ {str(e)[:80]}"
+    """از دروازهٔ سلف تلگرام — همان منطق، یک‌جا نگهداری می‌شود."""
+    from .tguser import TgSelfGateway
+
+    return await TgSelfGateway.probe(tg_client, int(chat_id))
 
 
 async def probe_bale_access(bale_api, chat_id) -> tuple[bool, str]:
@@ -69,6 +64,10 @@ class Wizard:
             getattr(cfg, "BALE_SESSION", "data/session"),
             (getattr(cfg, "BALE_PHONE", "") or "").strip() or None,
         )
+        # موتور ورود سلف تلگرام (دومرحله‌ای + رمز دوم — یک منبع)
+        from .tguser import TgLoginEngine
+
+        self._tg_login = TgLoginEngine(cfg, store)
 
     # ------------------------------------------------------------ کیبورد
     def _menu_kb(self) -> dict:
@@ -481,71 +480,24 @@ class Wizard:
 
     # ------------------------------------------------------------ تلگرام: لاگین
     async def _tg_client(self):
-        """کلاینت سلف تلگرام اگر آماده باشد (برای resolve و probe)."""
-        if not self.store.has_tg(self.cfg):
-            return None
-        api = self.store.tg_api() or {}
-        api_id = int(getattr(self.cfg, "TG_API_ID", 0) or 0) or int(api.get("api_id", 0))
-        api_hash = getattr(self.cfg, "TG_API_HASH", "") or api.get("api_hash", "")
-        from telethon import TelegramClient
+        """از دروازهٔ سلف تلگرام — کلاینت آماده برای resolve و probe."""
+        from .tguser import TgSelfGateway
 
-        client = TelegramClient(str(self.cfg.SESSION_PATH), api_id, api_hash)
-        await client.connect()
-        if not await client.is_user_authorized():
-            return None
-        return client
+        return await TgSelfGateway.ready_client(self.cfg, self.store)
 
     async def _tg_request_code(self, chat_id, phone: str) -> tuple[bool, str]:
+        """از موتور ورود سلف تلگرام — همان منطق، یک‌جا نگهداری می‌شود."""
         data = self._state(chat_id)["data"]
-        api = self.store.tg_api() or {}
-        api_id = int(data.get("api_id") or getattr(self.cfg, "TG_API_ID", 0) or 0
-                     or api.get("api_id", 0))
-        api_hash = (data.get("api_hash") or getattr(self.cfg, "TG_API_HASH", "")
-                    or api.get("api_hash", ""))
-        if not api_id or not api_hash:
-            return False, "api_id/api_hash نامعتبر"
-        from telethon import TelegramClient
-
-        self.cfg.TG_API_ID, self.cfg.TG_API_HASH = api_id, api_hash
-        client = TelegramClient(str(self.cfg.SESSION_PATH), api_id, api_hash)
-        await client.connect()
-        if not await client.is_user_authorized():
-            sent = await client.send_code_request(phone)
-            data["phone_code_hash"] = getattr(sent, "phone_code_hash", None)
-        self._st[chat_id]["tg_client"] = client  # نگه می‌داریم برای sign_in
-        return True, "کد ارسال شد"
+        return await self._tg_login.request_code(
+            chat_id, phone, api_id=data.get("api_id"), api_hash=data.get("api_hash"))
 
     async def _tg_sign_in(self, chat_id, code: str) -> tuple:
-        client = self._st[chat_id].get("tg_client")
-        data = self._state(chat_id)["data"]
-        if client is None:
-            return False, "نشست از دست رفت — از اول (دکمه 📱)"
-        from telethon.errors import SessionPasswordNeededError
-
-        try:
-            await client.sign_in(phone=data.get("phone"), code=code,
-                                 phone_code_hash=data.get("phone_code_hash"))
-        except SessionPasswordNeededError:
-            return "need_password", ""
-        except Exception as e:
-            return False, str(e)[:150]
-        me = await client.get_me()
-        await client.disconnect()
-        self._st[chat_id]["tg_client"] = None
-        return True, f"@{me.username}" if me.username else (me.first_name or "وصل شد")
+        """از موتور ورود سلف تلگرام — همان منطق، یک‌جا نگهداری می‌شود."""
+        return await self._tg_login.sign_in(chat_id, code)
 
     async def _tg_password(self, chat_id, password: str) -> tuple[bool, str]:
-        client = self._st[chat_id].get("tg_client")
-        if client is None:
-            return False, "نشست از دست رفت"
-        try:
-            await client.sign_in(password=password)
-        except Exception as e:
-            return False, str(e)[:150]
-        me = await client.get_me()
-        await client.disconnect()
-        self._st[chat_id]["tg_client"] = None
-        return True, f"@{me.username}" if me.username else "وصل شد"
+        """از موتور ورود سلف تلگرام — همان منطق، یک‌جا نگهداری می‌شود."""
+        return await self._tg_login.password(chat_id, password)
 
     # ------------------------------------------------------------ بله: لاگین سلف
     async def _bale_request_code(self, phone: str) -> tuple[bool, str]:

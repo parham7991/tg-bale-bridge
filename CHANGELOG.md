@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.0] - 2026-09-22
+
+### Changed — ✈️ Telegram selfbot (Telethon): modular engine package
+- **All Telegram-selfbot logic extracted into `bridge/tguser/`** — including the
+  TG login flow that previously lived inline inside the wizard:
+  - `bridge/tguser/types_map.py` — pure mappings: Saved-Messages detection, text,
+    forward
+  - `bridge/tguser/session.py` — **TgSelfSession**: single source for building the
+    Telethon client (main.py + login engine) + safe connect/authorize
+  - `bridge/tguser/gateway.py` — **TgSelfGateway**: credential cascade
+    (wizard input ← .env ← store), ready-client for resolve/probe, access probe
+    (reads last message, both call signatures), `@user / t.me/user` normalization
+  - `bridge/tguser/login.py` — **TgLoginEngine**: two-step login + 2FA password;
+    the in-flight client and `phone_code_hash` now live inside the engine
+  - `bridge/tguser/routing.py` — **TgEventRouter**: Saved-Messages = admin panel,
+    everything else = bridge; edits/deletes in Saved-Messages ignored
+  - `bridge/tguser/events.py` — **TgEventsEngine**: the only place touching the
+    Telethon dispatcher; swallows+logs handler exceptions
+  - `bridge/tguser/facade.py` — **TgSelfBot** + module-level `register()` with the
+    exact legacy signature
+- `main.py` builds its client via `TgSelfSession.build` and imports `register`
+  from `bridge.tguser`; wizard `_tg_*` methods + `probe_tg_access` + `_tg_username`
+  now delegate to the engines; `bridge/tg_user.py` kept as a re-export shim
+- No behavior change; **217 tests green** (25 new offline engine tests), ruff clean
+
+[2.7.0]: https://github.com/parham7991/tg-bale-bridge/compare/v2.6.0...v2.7.0
+
 ## [2.6.0] - 2026-09-22
 
 ### Changed — ✈️ Telegram control bot: modular engine package

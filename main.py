@@ -12,8 +12,6 @@ import logging
 import sys
 import time
 
-from telethon import TelegramClient
-
 import config as cfg
 from bridge import logbuf
 from bridge.admin import Admin
@@ -22,8 +20,9 @@ from bridge.bot_api import BotAPI, BotAPIError
 from bridge.dashboard import Dashboard
 from bridge.db import DB
 from bridge.store import Store
-from bridge.tg_user import register as register_tg
 from bridge.tgbot import TgAdminBot
+from bridge.tguser import TgSelfSession
+from bridge.tguser import register as register_tg
 from bridge.transfer import Bridge
 from bridge.wizard import Wizard
 
@@ -128,7 +127,7 @@ async def main():
                  cfg.ADMIN_BALE_ID)
 
     # ---------- سمت تلگرام: سلف (Telethon) ----------
-    tg = TelegramClient(str(cfg.SESSION_PATH), cfg.TG_API_ID, cfg.TG_API_HASH)
+    tg = TgSelfSession.build(cfg.SESSION_PATH, cfg.TG_API_ID, cfg.TG_API_HASH)
     await tg.start(phone=cfg.TG_PHONE or None)
     me = await tg.get_me()
     log.info("حساب تلگرام (سلف): %s (id=%s)", me.username or me.first_name, me.id)

@@ -167,7 +167,7 @@ def test_exception_is_swallowed_and_logged(monkeypatch):
 
 def test_first_start_claims_admin_and_opens_wizard():
     bot, api, _, cfg, _, f_wiz, f_store = make_bot(admin_id=0)
-    handled = run(bot.on_update({"message": msg("/start", uid=555)}, 1))
+    run(bot.on_update({"message": msg("/start", uid=555)}, 1))
     assert f_store.claimed == (555, "ali") and cfg.ADMIN_TG_ID == 555
     assert any("ادمین پل شدید" in t for _, t in api.sent)
     assert f_wiz.opened == [(100, 555)]
