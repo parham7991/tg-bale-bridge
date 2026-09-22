@@ -38,6 +38,7 @@ flowchart LR
 | Bot-API clients | `bridge/botapi/` → `bridge/bot_api.py` (shim) | Generic client for **both** Bale and Telegram Bot API: multipart uploads, file downloads, long-polling, `retry_after` handling. Since v2.11.0 implemented as the modular `bridge/botapi/` engine package; `bot_api.py` only re-exports it |
 | Runtime settings | `bridge/store.py` | DB-backed config (accounts, admin, tokens) — `.env` shrinks to one token |
 | Web dashboard | `bridge/dashboard/` (package) | `app.py` assembly · `api.py` thin HTTP · `auth.py` AuthEngine (PBKDF2/sessions/lockout) · `context.py` RuntimeCtx · `engines/{status,pairs,control,logs,ops}` domain engines |
+| Storage package | `bridge/dbstore/` (package) | `types_map` SCHEMA/constants · `connection` ConnectionEngine (SQLite+RLock) · `meta` MetaEngine · `pairs` PairsEngine (direction-aware) · `map` MapEngine (two-way msg map) · `loopcache` LoopCacheEngine (sent consume-once + sent_fp window) · `stats` StatsEngine · `facade` DB |
 | Bot-API client package | `bridge/botapi/` (package) | `types_map` URL/media-table/media-group builders · `session` BotAPISession (lazy aiohttp) · `transport` CallEngine (retry + rate-limit + multipart) + BotAPIError · `methods` MethodsEngine · `sender` SenderEngine · `files` FilesEngine (streaming download) · `events` ListenEngine (long-polling) · `facade` BotAPI |
 | Admin package | `bridge/admin/` (package) | `types_map` aliases/HELP/parser · `surfaces` SurfacesEngine · `resolver` ResolverEngine (TG resolve + /id) · `pairs_cmds` PairsCommandsEngine · `system_cmds` SystemCommandsEngine · `control_cmds` ControlCommandsEngine · `ops_cmds` OpsCommandsEngine (access/promote) · `dash_cmds` DashCommandsEngine · `probes` compat · `facade` Admin |
 | Wizard package | `bridge/wizard/` (package) | `types_map` constants/extractors · `menu` MenuEngine · `accounts` AccountsEngine (Bale API builders + token check) · `pairing` PairingEngine (2-step pairing) · `checks` AccessReportEngine · `promote` PromoteEngine · `dashinfo` DashInfoEngine · `finish` FinishEngine (auto-restart) · `probes` compat functions · `facade` Wizard FSM |
@@ -51,7 +52,7 @@ flowchart LR
 | TG control bot | `bridge/tgbot/` → `bridge/tg_bot.py` (shim) | Remote management of the self-bot via a Telegram bot (same command panel). Since v2.6.0 implemented as the modular `bridge/tgbot/` engine package; `tg_bot.py` only re-exports it |
 | Log buffer | `bridge/logbuf.py` | In-memory ring buffer serving the `/logs` command |
 | Formatter | `bridge/formatter.py` | Telegram entities ⇄ Bale Markdown, UTF-16 offset math, renderers for polls/dice/venues/services |
-| Store | `bridge/db.py` | Channel pairs, message mapping (for replies/edits/deletes), loop-prevention ledger |
+| Store | `bridge/dbstore/` → `bridge/db.py` (shim) | Channel pairs, message mapping (for replies/edits/deletes), loop-prevention ledger. Since v2.12.0 implemented as the modular `bridge/dbstore/` engine package; `db.py` only re-exports it |
 | Admin | `bridge/admin/` → `bridge/admin.py` (shim) | `/add`, `/list`, `/mode`, `/remove`, `/test`, `/id`, `/status`, `/whoami`, `/pause`, `/resume`, `/logs`, `/access`, `/promote`, `/dashboard`, `/passwd`, `/dashuser` — the identical panel on 4 surfaces. Since v2.10.0 implemented as the modular `bridge/admin/` engine package; `admin.py` only re-exports it |
 
 ## Data model

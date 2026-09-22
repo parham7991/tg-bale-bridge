@@ -99,7 +99,11 @@
 | **`bridge/botapi/`** | 🔌 بستهٔ کلاینت Bot-API | ↓ تفکیک کامل ↓ (بله + تلگرام) |
 | `botapi/transport.py` / `session.py` | 🌐 انتقال HTTP | retry، rate-limit، multipart، نشست تنبل |
 | `botapi/methods.py` / `sender.py` / `files.py` / `events.py` | 📤 متدها | پایه، رسانه‌ها، دانلود، long-polling |
-| `bridge/db.py` / `store.py` | 💾 موتور داده | نگاشت‌ها + تنظیمات زمان اجرا |
+| **`bridge/dbstore/`** | 💾 بستهٔ داده | ↓ تفکیک کامل ↓ (SQLite + قفل) |
+| `dbstore/connection.py` / `types_map.py` | 🗄 اتصال و شِما | اتصال یکتا با قلم نخ، SCHEMA |
+| `dbstore/pairs.py` / `map.py` | 🔗 جفت‌ها و نقشه | CRUD جفت‌ها، نقشهٔ دوطرفهٔ پیام‌ها |
+| `dbstore/loopcache.py` / `meta.py` / `stats.py` | 🛡 ضدلوپ، متا، آمار | دفترچه یک‌بارمصرف، اثر انگشت پنجره‌ای |
+| `bridge/store.py` | ⚙️ تنظیمات زمان اجرا | اکانت‌ها و توکن‌ها روی همان دیتابیس |
 | `bridge/formatter.py` | 🎨 موتور قالب | تلگرام ⇄ بله مارک‌داون، UTF-16 |
 | `bridge/logbuf.py` | 📜 موتور لاگ | بافر حلقه‌ای زنده |
 | **`bridge/dashboard/`** | 🌐 بستهٔ داشبورد | ↓ تفکیک کامل ↓ |
