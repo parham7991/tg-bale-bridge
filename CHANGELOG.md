@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.14.0] - 2026-09-22
+
+### Changed — ⚙️ runtime settings store: modular engine package
+- **All runtime-settings logic extracted into `bridge/runcfg/`** (the `store.py`
+  file — the last flat logic module in `bridge/`):
+  - `bridge/runcfg/types_map.py` — `cfg:` key prefix + admin-id extraction
+    (dict shape from claim, or plain int)
+  - `bridge/runcfg/kvstore.py` — **JsonKVEngine**: the JSON layer over the meta
+    table (Persian-readable serialization, corrupt-value → default, soft delete)
+  - `bridge/runcfg/accounts.py` — **AccountsEngine**: first-`/start`-claims-admin +
+    all account accessors (tg_api / tg_self / bale_self / bale_bot + setters)
+  - `bridge/runcfg/readiness.py` — **ReadinessEngine**: `has_tg` (session file +
+    creds from env or store), `has_bale` (self session / bot token / user-mode
+    `.bale` session), `installed`
+  - `bridge/runcfg/facade.py` — **Store**: compatibility façade with the exact
+    legacy surface
+- `bridge/store.py` kept as a re-export shim — wizard/admin/dashboard/main/tests
+  all keep importing `from bridge.store import Store`
+- No behavior change; **317 tests green** (8 new engine tests), ruff clean
+
+[2.14.0]: https://github.com/parham7991/tg-bale-bridge/compare/v2.13.0...v2.14.0
+
 ## [2.13.0] - 2026-09-22
 
 ### Changed — 🎨 text formatting: modular engine package

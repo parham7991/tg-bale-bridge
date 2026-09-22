@@ -103,7 +103,8 @@
 | `dbstore/connection.py` / `types_map.py` | 🗄 اتصال و شِما | اتصال یکتا با قلم نخ، SCHEMA |
 | `dbstore/pairs.py` / `map.py` | 🔗 جفت‌ها و نقشه | CRUD جفت‌ها، نقشهٔ دوطرفهٔ پیام‌ها |
 | `dbstore/loopcache.py` / `meta.py` / `stats.py` | 🛡 ضدلوپ، متا، آمار | دفترچه یک‌بارمصرف، اثر انگشت پنجره‌ای |
-| `bridge/store.py` | ⚙️ تنظیمات زمان اجرا | اکانت‌ها و توکن‌ها روی همان دیتابیس |
+| **`bridge/runcfg/`** | ⚙️ بستهٔ تنظیمات زمان اجرا | ↓ تفکیک کامل ↓ (JSON روی meta) |
+| `runcfg/kvstore.py` / `accounts.py` / `readiness.py` | 💠 تنظیمات | لایهٔ JSON، ادمین خودکار و اکانت‌ها، وضعیت نصب |
 | **`bridge/textfmt/`** | 🎨 بستهٔ قالب‌بندی | ↓ تفکیک کامل ↓ |
 | `textfmt/tg2bale.py` / `bale2tg.py` | 🔤 تبدیل دوطرفه | موجودیت‌های تلگرام ⇄ Markdown بله با ریاضی UTF-16 |
 | `textfmt/splitting.py` / `headers.py` / `renderers.py` | ✂️ برش، هدر، جانشین | چندپیامی‌کردن، «باز‌ارسال از»، نظرسنجی/تاس/مکان |
