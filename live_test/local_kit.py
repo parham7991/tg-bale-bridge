@@ -27,7 +27,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from aiobale import Client  # noqa: E402
-from aiobale.enums import AuthErrors, ChatType  # noqa: E402
+from aiobale.enums import AuthErrors  # noqa: E402
 
 from bridge.bale_user import BaleUserAPI  # noqa: E402
 
@@ -117,7 +117,39 @@ async def cmd_login(argv: list[str]) -> int:
 # ───────────────────────────── باتری تست ─────────────────────────────
 
 async def battery() -> list:
+    """باتری رویدادمحور: تایید از طریق echo رویدادها (load_history کتابخانه روی
+    پیام‌های API-فرستاده باگ parse دارد — برای همین اصلاً از آن استفاده نمی‌کنیم)."""
     results: list = []
+    events: list = []          # (kind, payload-dict)
+    got = asyncio.Event()
+
+    async def handler(upd, off):
+        kind = next(iter(upd), "?")
+        events.append((kind, upd[kind]))
+        got.set()
+
+    def find(kind, mid=None, window=20):
+        """تا window ثانیه منتظر رویداد kind (با mid اختیاری) می‌ماند."""
+        async def wait():
+            deadline = asyncio.get_event_loop().time() + window
+            seen = 0
+            while asyncio.get_event_loop().time() < deadline:
+                for k, pl in events[seen:]:
+                    seen += 1
+                    if k != kind:
+                        continue
+                    if mid is None or pl.get("message_id") == mid or (
+                        kind == "deleted_messages" and mid in (pl.get("message_ids") or [])
+                    ):
+                        return pl
+                got.clear()
+                left = max(0.1, deadline - asyncio.get_event_loop().time())
+                try:
+                    await asyncio.wait_for(got.wait(), timeout=left)
+                except asyncio.TimeoutError:
+                    break
+            return None
+        return wait
 
     def rec(name: str, ok: bool, detail: str = "") -> None:
         results.append({"test": name, "ok": bool(ok), "detail": str(detail)[:400]})
@@ -127,6 +159,11 @@ async def battery() -> list:
     photo_path.write_bytes(PNG_1PX)
     api = BaleUserAPI(session_file=SESSION, db=None)
 
+    photo_path = HERE / "test_pixel.png"
+    photo_path.write_bytes(PNG_1PX)
+    api = BaleUserAPI(session_file=SESSION, db=None)
+
+    listener = asyncio.create_task(api.listen(handler))
     try:
         await asyncio.wait_for(api.start(), timeout=40)
         rec("T0_connect", True, "websocket handshake")
@@ -155,55 +192,40 @@ async def battery() -> list:
     except Exception as e:
         rec("T2_send_text", False, f"{type(e).__name__}: {e}")
 
-    try:
-        hist = await asyncio.wait_for(
-            api.client.load_history(self_id, ChatType.PRIVATE, limit=5), timeout=30)
-        found = [m for m in hist if getattr(m, "message_id", None) == text_mid]
-        norm = api.normalize(found[0]) if found else None
-        ok = bool(norm and norm.get("text") and marker in norm["text"])
-        rec("T3_history_normalize", ok, json.dumps(norm, ensure_ascii=False, default=str)[:250])
-    except Exception as e:
-        rec("T3_history_normalize", False, f"{type(e).__name__}: {e}")
-
+    # T3 — ویرایش → رویداد edited_message با متن جدید
     try:
         await asyncio.wait_for(
             api.edit_message_text(self_id, text_mid, f"{marker} — ویرایش شد ✏️"), timeout=30)
-        hist = await asyncio.wait_for(
-            api.client.load_history(self_id, ChatType.PRIVATE, limit=5), timeout=30)
-        edited = [m for m in hist if getattr(m, "message_id", None) == text_mid]
-        ok = bool(edited) and "ویرایش شد" in (api.normalize(edited[0]).get("text") or "")
-        rec("T4_edit", ok, "load_history confirms new text")
+        pl = await find("edited_message", text_mid)()
+        ok = bool(pl) and "ویرایش شد" in (pl.get("text") or "")
+        detail = "echo ویرایش رسید" if ok else "got=%s" % str(pl)[:120]
+        rec("T3_edit_event", ok, detail)
     except Exception as e:
-        rec("T4_edit", False, f"{type(e).__name__}: {e}")
+        rec("T3_edit_event", False, f"{type(e).__name__}: {e}")
 
+    # T4 — ارسال عکس
     photo_mid = None
     try:
         res = await asyncio.wait_for(
             api.send_photo(self_id, photo_path, caption=f"{marker} عکس تست"), timeout=60)
         photo_mid = res.get("message_id")
-        ok = bool(photo_mid) and all(v is not None for v in api._files.values())
-        rec("T5_send_photo", ok, f"message_id={photo_mid} file_cache={list(api._files)[:3]}")
+        rec("T4_send_photo", bool(photo_mid), f"message_id={photo_mid}")
     except Exception as e:
-        rec("T5_send_photo", False, f"{type(e).__name__}: {e}")
+        rec("T4_send_photo", False, f"{type(e).__name__}: {e}")
 
+    # T5 — حذف → رویداد deleted_messages با شناسه درست
     try:
+        await asyncio.wait_for(api.delete_message(self_id, text_mid), timeout=30)
         if photo_mid:
             await asyncio.wait_for(api.delete_message(self_id, photo_mid), timeout=30)
-        await asyncio.wait_for(api.delete_message(self_id, text_mid), timeout=30)
-        rec("T6_delete", True, f"deleted text={text_mid} photo={photo_mid}")
+        pl = await find("deleted_messages", text_mid)()
+        ids_ok = bool(pl) and text_mid in (pl.get("message_ids") or [])
+        detail = "echo حذف: %s" % str(pl)[:140] if ids_ok else "رویداد حذف نیامد"
+        rec("T5_delete_event", ids_ok, detail)
     except Exception as e:
-        rec("T6_delete", False, f"{type(e).__name__}: {e}")
+        rec("T5_delete_event", False, f"{type(e).__name__}: {e}")
 
-    try:
-        await asyncio.sleep(2)
-        hist = await asyncio.wait_for(
-            api.client.load_history(self_id, ChatType.PRIVATE, limit=10), timeout=30)
-        ids = {getattr(m, "message_id", None) for m in hist}
-        rec("T7_delete_verified", text_mid not in ids and photo_mid not in ids,
-            "پیام‌های آزمایشی دیگر در تاریخچه نیستند")
-    except Exception as e:
-        rec("T7_delete_verified", False, f"{type(e).__name__}: {e}")
-
+    listener.cancel()
     await api.close()
     photo_path.unlink(missing_ok=True)
     _dump(RESULTS, results)

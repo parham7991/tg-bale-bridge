@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-09-22
+
+### Fixed
+- **`bale_user`: dispatcher registration** — aiobale's `Router.register` is a
+  decorator-factory: `dp.message(handler)` silently registered the handler as a
+  *filter*, so zero handlers ever fired. Correct form: `dp.message()(handler)`.
+  Found by frame-level live debugging on a real account.
+- **`get_me` / `get_chat`** — read name/username from `client.me.user` (UserAuth),
+  unwrap aiobale value-wrappers (e.g. `StringValue`), and pass the required
+  `chat_type` to `load_user`.
+- `live_test/local_kit.py` battery is now **event-driven** (edit/delete verified via
+  real echo events) — aiobale's `load_history` fails to parse messages sent through
+  the API (library-side `MessageData` model bug), so history is never used.
+
+### Verified live (real account, real server)
+- WebSocket connect · get_me · send text & photo · edit · delete
+- Live events: `message`, `edited_message`, **`message_deleted`** — including
+  third-party deletions inside groups, the feed that powers Bale→Telegram
+  delete sync.
+
+[1.2.1]: https://github.com/parham7991/tg-bale-bridge/compare/v1.2.0...v1.2.1
+
 ## [1.2.0] - 2026-09-22
 
 ### Added
