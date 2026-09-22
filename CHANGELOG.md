@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-09-22
+
+### Added — 🧙‍♂️ the one-token installer
+- **`.env` now needs only `TG_BOT_TOKEN`** — everything else is configured from inside
+  the Telegram control bot, with an inline-button wizard (`/setup`)
+- **First `/start` claims admin** — no numeric IDs in config, ever
+- **Wizard flows** (all conversational, inside the bot chat):
+  - 📱 **Telegram selfbot**: api_id → api_hash → phone → code → optional 2FA password
+    (real Telethon `send_code_request`/`sign_in`, session persisted)
+  - 🟡 **Bale selfbot**: phone → SMS code (aiobale `start_phone_auth`/`validate_code`,
+    session file written automatically)
+  - 🤖 **Bale bot**: paste token → validated via `getMe`
+  - 🔗 **Channel pairing**: forward a Telegram-channel message *or* send @username →
+    send the Bale channel @username → pick direction with inline buttons
+    (`both` / `tg2bale` / `bale2tg`) → saved instantly
+- **Live access verification** — after pairing (and on demand via the new `/access`
+  command) every configured account is probed *for real*: Telegram self reads the
+  channel, Bale self/bot send+delete a probe message — report shows ✔/✘ per account
+- **Auto-restart** — finishing the wizard re-execs `main.py` and the full bridge boots
+- `bridge/store.py` — DB-backed runtime settings (accounts, admin, tokens) so restarts
+  need no .env beyond the bot token; `.env.example` rewritten (minimal-first)
+- 19 new tests (FSM transitions, admin claim, callback routing, probes, /access) —
+  **116 total**, ruff clean
+
+[2.0.0]: https://github.com/parham7991/tg-bale-bridge/compare/v1.3.0...v2.0.0
+
 ## [1.3.0] - 2026-09-22
 
 ### Added

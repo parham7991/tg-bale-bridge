@@ -28,6 +28,11 @@ class Cfg:
 
     def __init__(self, tmp: Path):
         self.TMP_DIR = tmp
+        self.SESSION_PATH = tmp / "tg"
+        self.BALE_SESSION = str(tmp / "session")
+        self.BALE_POLL_TIMEOUT = 30
+        self.TG_BOT_TOKEN = ""
+        self.TG_BOT_API_BASE = "https://api.telegram.org"
         self.ALBUM_DELAY = 0.15
         self.MAX_BALE_UPLOAD = 50 * 1024 * 1024
         self.MAX_BALE_PHOTO = 10 * 1024 * 1024

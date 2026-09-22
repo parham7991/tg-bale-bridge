@@ -32,6 +32,8 @@ CMD_ALIASES = {
     "pause": "pause", "توقف": "pause", "مکث": "pause", "قفل": "pause",
     "resume": "resume", "ادامه": "resume", "ازسرگیری": "resume",
     "logs": "logs", "لاگ": "logs", "لاگ‌ها": "logs",
+    "access": "access", "دسترسی": "access",
+    "setup": "setup", "نصب": "setup",
 }
 
 HELP = """🤖 پل همگام‌سازی تلگرام ⇄ بله
@@ -53,6 +55,8 @@ HELP = """🤖 پل همگام‌سازی تلگرام ⇄ بله
 ▫️ /whoami — هویت حساب‌ها (سلف، بله، بات مدیریت)
 ▫️ /pause · /resume — توقف/ادامهٔ موقت همگام‌سازی
 ▫️ /logs [تعداد] — آخرین خطوط لاگ (پیش‌فرض ۱۵)
+▫️ /access — تست واقعی دسترسی سلف‌ها/ربات به کانال‌های هر جفت
+▫️ /setup — باز کردن ویزارد نصب (فقط در بات مدیریت تلگرام)
 ▫️ /id — در پاسخ/فوروارد پیام، شناسه چت را می‌گوید (برای /add)
 
 💡 برای فهمیدن شناسه عددی کانال‌ها کافی است یک پیام از آن‌ها را اینجا فوروارد کنید."""
@@ -198,6 +202,34 @@ class Admin:
                 f"▫️ بله: {bale_line}\n"
                 f"▫️ بات مدیریت تلگرام: {bot_line}\n"
                 f"▫️ پنل‌های فعال: {self._surfaces()}")
+
+    async def cmd_access(self, platform, args, msg):
+        """تست واقعی دسترسی هر حساب به کانال‌های هر جفت (ارسال/خواندن آزمایشی)."""
+        from .wizard import probe_bale_access, probe_tg_access
+
+        pairs = self.db.list_pairs()
+        if not pairs:
+            return "هنوز جفتی ثبت نشده — /add"
+        lines = ["🔓 دسترسی سلف‌ها به کانال‌ها:"]
+        for p in pairs:
+            lines.append("")
+            lines.append(f"🔗 جفت #{p['id']}: {p['tg_label'] or p['tg_chat_id']} ⇄ "
+                         f"{p['bale_label'] or p['bale_chat_id']} ({p['mode']})")
+            try:
+                ok, note = await probe_tg_access(self.tg, p["tg_chat_id"])
+            except Exception as e:
+                note = f"✘ {str(e)[:60]}"
+            lines.append(f"  ▫️ سلف تلگرام → {p['tg_label'] or p['tg_chat_id']}: {note}")
+            try:
+                ok, note = await probe_bale_access(self.bale, p["bale_chat_id"])
+            except Exception as e:
+                note = f"✘ {str(e)[:60]}"
+            lines.append(f"  ▫️ سمت بله → {p['bale_label'] or p['bale_chat_id']}: {note}")
+        return "\n".join(lines)
+
+    async def cmd_setup(self, platform, args, msg):
+        return ("🧙‍♂️ ویزارد نصب فقط در **بات مدیریت تلگرام** باز می‌شود: /setup\n"
+                "(همه‌چیز بدون هیچ شناسه عددی همان‌جا ست می‌شود)")
 
     async def cmd_pause(self, platform, args, msg):
         self.bridge.paused = True

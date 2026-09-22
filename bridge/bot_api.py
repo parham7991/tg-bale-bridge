@@ -100,10 +100,12 @@ class BotAPI:
     async def get_updates(self, offset: int | None = None, timeout: int = 30):
         return await self.call("getUpdates", {"offset": offset, "timeout": timeout, "limit": 100})
 
-    async def send_message(self, chat_id, text: str, reply_to: int | None = None):
-        return await self.call("sendMessage", {
-            "chat_id": chat_id, "text": text, "reply_to_message_id": reply_to,
-        })
+    async def send_message(self, chat_id, text: str, reply_to: int | None = None,
+                           reply_markup: dict | None = None):
+        params = {"chat_id": chat_id, "text": text, "reply_to_message_id": reply_to}
+        if reply_markup is not None:
+            params["reply_markup"] = reply_markup
+        return await self.call("sendMessage", params)
 
     async def send_chat_action(self, chat_id, action: str = "typing"):
         try:

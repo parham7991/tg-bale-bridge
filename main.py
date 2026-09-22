@@ -1,4 +1,10 @@
-"""نقطه شروع پل همگام‌سازی تلگرام ⇄ بله."""
+"""نقطه شروع پل همگام‌سازی تلگرام ⇄ بله.
+
+دو حالت بوت:
+• حالت نصاب — فقط TG_BOT_TOKEN لازم است؛ بات تلگرام ویزارد نصب را می‌چرخاند
+  (سلف تلگرام، سلف بله، ربات بله، جفت کانال‌ها، تست دسترسی) و در پایان خودش ری‌استارت می‌شود.
+• حالت کامل — همه حساب‌ها از store/.env آماده‌اند؛ پل کامل بالا می‌آید.
+"""
 from __future__ import annotations
 
 import asyncio
@@ -13,9 +19,11 @@ from bridge import logbuf
 from bridge.admin import Admin
 from bridge.bot_api import BotAPI, BotAPIError
 from bridge.db import DB
+from bridge.store import Store
 from bridge.tg_bot import TgAdminBot
 from bridge.tg_user import register as register_tg
 from bridge.transfer import Bridge
+from bridge.wizard import Wizard
 
 logging.basicConfig(
     level=logging.INFO,
@@ -31,10 +39,54 @@ BANNER = """
 """
 
 
+def _apply_store_overrides(cfg, store: Store) -> None:
+    """پیکربندی ذخیره‌شده در ویزارد (.env حداقلی) را روی cfg اعمال می‌کند."""
+    admin = store.admin_tg_id()
+    if admin and not cfg.ADMIN_TG_ID:
+        cfg.ADMIN_TG_ID = admin
+    api = store.tg_api()
+    if api:
+        if not cfg.TG_API_ID:
+            cfg.TG_API_ID = int(api.get("api_id") or 0)
+        if not cfg.TG_API_HASH:
+            cfg.TG_API_HASH = api.get("api_hash", "")
+    bb = store.bale_bot()
+    if bb and not cfg.BALE_TOKEN:
+        cfg.BALE_TOKEN = bb.get("token", "")
+
+
+async def _run_installer(db: DB, store: Store):
+    """فقط بات کنترل + ویزارد نصب."""
+    if not cfg.TG_BOT_TOKEN:
+        log.error("TG_BOT_TOKEN در .env لازم است — فقط همین یکی!")
+        sys.exit(1)
+    log.warning("نصب ناقص است — حالت نصاب: در بات تلگرام /start بزنید و ویزارد را کامل کنید")
+    api = BotAPI(cfg.TG_BOT_TOKEN, cfg.TG_BOT_API_BASE)
+    try:
+        api.me = await api.get_me()
+    except BotAPIError as e:
+        log.error("بات مدیریت تلگرام ناموفق — TG_BOT_TOKEN را بررسی کنید: %s", e)
+        sys.exit(1)
+    wizard = Wizard(api, db, cfg, store)
+    bot = TgAdminBot(api, None, db, cfg, wizard=wizard, store=store)
+    try:
+        await bot.start()
+    finally:
+        await api.close()
+
+
 async def main():
     print(BANNER)
     started_at = time.time()
     log_handler = logbuf.install()
+
+    db = DB(cfg.DB_PATH)
+    store = Store(db)
+    _apply_store_overrides(cfg, store)
+
+    if not store.installed(cfg):
+        await _run_installer(db, store)
+        return
 
     problems = cfg.validate()
     if problems:
@@ -42,8 +94,8 @@ async def main():
             log.error("پیکربندی: %s", p)
         sys.exit(1)
 
-    db = DB(cfg.DB_PATH)
-    if cfg.BALE_MODE == "user":
+    # ---------- سمت بله: سلف (aiobale) یا ربات (BotAPI) ----------
+    if cfg.BALE_MODE == "user" or store.bale_self():
         from bridge.bale_user import BaleUserAPI
 
         bale = BaleUserAPI(
@@ -66,6 +118,7 @@ async def main():
         log.info("ADMIN_BALE_ID خودکار = %s (خودتان) — در بله به خودتان /help بدهید",
                  cfg.ADMIN_BALE_ID)
 
+    # ---------- سمت تلگرام: سلف (Telethon) ----------
     tg = TelegramClient(str(cfg.SESSION_PATH), cfg.TG_API_ID, cfg.TG_API_HASH)
     await tg.start(phone=cfg.TG_PHONE or None)
     me = await tg.get_me()
@@ -80,13 +133,13 @@ async def main():
                   log_buffer=log_handler, started_at=started_at)
     register_tg(tg, bridge, admin, me.id)
 
-    if not cfg.ADMIN_BALE_ID and cfg.BALE_MODE == "bot":
-        log.warning("ADMIN_BALE_ID تنظیم نشده — در ربات بله /start بزنید")
+    if not cfg.ADMIN_TG_ID:
+        log.warning("ادمین تلگرام تعیین نشده — اولین /start در بات مدیریت ادمین می‌شود")
 
     pairs = db.list_pairs()
     log.info("%d جفت کانال فعال است", len(pairs))
 
-    # ---------- بات مدیریت تلگرام (اختیاری) ----------
+    # ---------- بات مدیریت تلگرام + ویزارد ----------
     tg_bot_task = None
     tg_bot_api = None
     if cfg.TG_BOT_TOKEN:
@@ -97,8 +150,8 @@ async def main():
             log.error("بات مدیریت تلگرام ناموفق — TG_BOT_TOKEN را بررسی کنید: %s", e)
             tg_bot_api = None
         if tg_bot_api:
-            admin.tg_bot_info = tg_bot_api.me
-            tgbot = TgAdminBot(tg_bot_api, admin, db, cfg)
+            wizard = Wizard(tg_bot_api, db, cfg, store, admin=admin)
+            tgbot = TgAdminBot(tg_bot_api, admin, db, cfg, wizard=wizard, store=store)
             tg_bot_task = asyncio.create_task(tgbot.start())
     else:
         log.info("TG_BOT_TOKEN تنظیم نشده — بات مدیریت تلگرام غیرفعال است")

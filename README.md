@@ -7,7 +7,7 @@
 [![CI](https://github.com/parham7991/tg-bale-bridge/actions/workflows/ci.yml/badge.svg)](https://github.com/parham7991/tg-bale-bridge/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-97%20✅-success)](tests/)
+[![Tests](https://img.shields.io/badge/tests-116%20✅-success)](tests/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 **پل دوطرفهٔ همگام‌سازی کانال‌های تلگرام و بله** — هرچه یک‌طرف بگذارید، بی‌کم‌وکاست در طرف دیگر می‌نشیند.<br/>
@@ -45,7 +45,7 @@
 | 🧩 **بدون حلقه** | نگهبان دو‌لایه (ledger شناسه + اثرانگشت محتوا) مانع بازتاب بی‌نهایت می‌شود |
 | 🎛 **پنل چهارسطحی متصل** | مدیریت از چهار جا: ربات بله · خودچت بله (سلف‌بات جواب می‌دهد!) · بات تلگرام · Saved Messages — همه یک پنل |
 | 🤖 **بات تلگرام برای مدیریت سلف‌بات** | کنترل کامل از راه دور: توقف/ادامه، لاگ زنده، هویت، ساخت جفت — با بات تلگرام |
-| 🧪 **۹۷ تست آفلاین** | pytest شامل تست‌های واحد و سرتاسری — CI روی پایتون ۳.۱۰ تا ۳.۱۲ |
+| 🧪 **۱۱۶ تست آفلاین** | pytest شامل تست‌های واحد و سرتاسری — CI روی پایتون ۳.۱۰ تا ۳.۱۲ |
 | 🐳 **داکر و systemd** | آمادهٔ استقرار روی سرور |
 
 ## 🎬 نمای کلی قابلیت‌ها
@@ -94,7 +94,9 @@ flowchart LR
 مستندات کامل معماری (مودل داده، دیاگرام ترتیب پیام، استراتژی وفاداری):
 [**docs/architecture.md**](docs/architecture.md)
 
-## 🚀 راه‌اندازی سریع
+## 🚀 راه‌اندازی ۶۰ ثانیه‌ای — فقط یک توکن!
+
+**تنها چیزی که لازم است: توکن یک بات تلگرام (از @BotFather). بقیه‌اش از داخل خود بات:**
 
 ```bash
 git clone https://github.com/parham7991/tg-bale-bridge.git
@@ -102,11 +104,34 @@ cd tg-bale-bridge
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
+echo "TG_BOT_TOKEN=123456:ABC..." > .env
+python main.py              # ▶️ حالت نصاب بالا می‌آید
+```
+
+حالا در تلگرام به بات‌تان `/start` بدهید — **اولین نفر ادمین می‌شود** (هیچ شناسه عددی لازم نیست) — و ویزارد باز می‌شود:
+
+| دکمه | کار |
+|---|---|
+| 📱 سلف تلگرام | api_id/api_hash + شماره + کد (و رمز دوم) — همه در همان چت |
+| 🟡 سلف بله | شماره + کد پیامکی بله — نشست aiobale ساخته می‌شود |
+| 🤖 ربات بله | فقط توکن را paste کنید |
+| 🔗 جفت کانال‌ها | فوروارد یک پیام از کانال تلگرام (یا @آیدی) + @آیدی کانال بله + انتخاب جهت با دکمه |
+| 📊 وضعیت نصب | چه چیزهایی آماده است |
+| ✅ اتمام | برنامه خودش ری‌استارت می‌شود و پل کامل بالا می‌آید 🚀 |
+
+بعد از هر جفت‌کردن، **دسترسی واقعی هر حساب تست می‌شود** (ارسال/حذف پیام آزمایشی) و گزارش
+✔/✘ می‌گیرید: «سلف تلگرام ✔ · سلف بله ✔ · ربات بله ✘». هر وقت هم خواستید: `/access`.
+
+<details>
+<summary>🔧 راه پیشرفته (همه‌چیز در .env — مثل قبل)</summary>
+
+```bash
 cp .env.example .env        # ← مقادیر را کامل کنید
 python login.py             # ← ورود به تلگرام (یک بار، کد تایید می‌خواهد)
 python login_bale.py        # ← فقط برای حالت سلف‌بات بله (BALE_MODE=user)
 python main.py              # ▶️
 ```
+</details>
 
 <details>
 <summary>🐳 اجرا با Docker</summary>
@@ -223,7 +248,7 @@ docker compose logs -f
 
 ```bash
 make dev      # نصب وابستگی‌های توسعه
-make test     # اجرای ۹۷ تست آفلاین (بدون نیاز به اکانت واقعی)
+make test     # اجرای ۱۱۶ تست آفلاین (بدون نیاز به اکانت واقعی)
 make lint     # ruff
 ```
 
