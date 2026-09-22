@@ -396,7 +396,7 @@ class Admin:
                 done.append(f"بله ✘ ({e})")
         if pair["mode"] in ("bale2tg", "both"):
             try:
-                ent = await self.bridge._tg_entity(int(pair["tg_chat_id"]))
+                ent = await self.bridge.b2t.entity(int(pair["tg_chat_id"]))
                 m = await self.tg.send_message(ent, text)
                 self.db.mark_sent("tg", str(pair["tg_chat_id"]), m.id)
                 done.append("تلگرام ✔")

@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.0] - 2026-09-22
+
+### Changed — ❤️ transfer engine: the heart of the bridge, modularized
+- **All mirroring logic extracted into `bridge/transfer/`** (the 811-line
+  `transfer.py` was the largest file left) — same per-section engines pattern:
+  - `bridge/transfer/types_map.py` — pure mappings: TG message classification,
+    Bale content extraction, UTF-16 entity building, content fingerprint
+  - `bridge/transfer/loopguard.py` — **LoopGuard**: sent-ledger (was_sent/mark_sent),
+    content fingerprints, delete-echo suppression sets (both layers of loop prevention)
+  - `bridge/transfer/albums.py` — **AlbumCollector**: media-group collection with
+    flush timers (Bale delay ×1.4), one instance per direction
+  - `bridge/transfer/queueing.py` — **QueueEngine**: the two deterministic FIFOs,
+    one worker per side, pause state, all event entry points
+  - `bridge/transfer/mirror_t2b.py` — **T2BEngine**: Telegram→Bale (every media
+    type, full fallback chain, albums with parallel download + group send)
+  - `bridge/transfer/mirror_b2t.py` — **B2TEngine**: Bale→Telegram (entity offsets,
+    caption_entities compat, 20 MB download cap, album fallback)
+  - `bridge/transfer/sync_edit.py` — **EditSyncEngine**: two-way edits with
+    delete+resend replacement on failure
+  - `bridge/transfer/sync_delete.py` — **DeleteSyncEngine**: two-way deletes with
+    echo suppression (selfbot-only on the Bale side)
+  - `bridge/transfer/facade.py` — **Bridge**: compatibility façade with the exact
+    legacy surface (`workers`, `on_*`, `queue_*`, `paused`, `bale_bot`, statics)
+- `admin /test` now resolves the TG entity via `bridge.b2t.entity`
+- `bridge/transfer.py` kept as a re-export shim (`_fp` import preserved)
+- No behavior change; **229 tests green** (12 new engine tests), ruff clean
+
+[2.8.0]: https://github.com/parham7991/tg-bale-bridge/compare/v2.7.0...v2.8.0
+
 ## [2.7.0] - 2026-09-22
 
 ### Changed — ✈️ Telegram selfbot (Telethon): modular engine package
