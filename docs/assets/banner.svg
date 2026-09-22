@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 380" width="1200" height="380" role="img" aria-label="TG–Bale Bridge">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="55%" stop-color="#121a24"/>
+      <stop offset="100%" stop-color="#0d1117"/>
+    </linearGradient>
+    <linearGradient id="arc" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#2AABEE"/>
+      <stop offset="50%" stop-color="#8ed1fc"/>
+      <stop offset="100%" stop-color="#14C38E"/>
+    </linearGradient>
+    <linearGradient id="tgC" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#37BBFE"/>
+      <stop offset="100%" stop-color="#1B8FD6"/>
+    </linearGradient>
+    <linearGradient id="baleC" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2BD99C"/>
+      <stop offset="100%" stop-color="#0E9E6E"/>
+    </linearGradient>
+    <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+    <radialGradient id="glowTg" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#2AABEE" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#2AABEE" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowBale" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#14C38E" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#14C38E" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="380" rx="18" fill="url(#bg)"/>
+
+  <!-- decorative dots -->
+  <g fill="#ffffff" opacity="0.05">
+    <circle cx="90" cy="60" r="2.5"/><circle cx="180" cy="42" r="2"/><circle cx="300" cy="70" r="2"/>
+    <circle cx="980" cy="52" r="2.5"/><circle cx="1080" cy="84" r="2"/><circle cx="1140" cy="40" r="2"/>
+    <circle cx="60" cy="320" r="2"/><circle cx="240" cy="345" r="2.5"/><circle cx="1010" cy="330" r="2"/>
+    <circle cx="1130" cy="300" r="2.5"/><circle cx="620" cy="352" r="2"/><circle cx="520" cy="40" r="2"/>
+  </g>
+
+  <!-- glows -->
+  <circle cx="255" cy="190" r="150" fill="url(#glowTg)"/>
+  <circle cx="945" cy="190" r="150" fill="url(#glowBale)"/>
+
+  <!-- bridge arc -->
+  <path d="M 320 210 Q 600 60 880 210" fill="none" stroke="url(#arc)" stroke-width="10" stroke-linecap="round" opacity="0.9"/>
+  <path d="M 320 210 Q 600 60 880 210" fill="none" stroke="url(#arc)" stroke-width="26" stroke-linecap="round" opacity="0.18" filter="url(#soft)"/>
+
+  <!-- Telegram node -->
+  <circle cx="255" cy="190" r="86" fill="url(#tgC)"/>
+  <circle cx="255" cy="190" r="86" fill="none" stroke="#ffffff" stroke-opacity="0.25" stroke-width="3"/>
+  <path d="M 212 192 L 300 154 L 272 236 L 246 210 L 232 226 L 230 204 Z" fill="#ffffff"/>
+  <text x="255" y="318" text-anchor="middle" font-family="Segoe UI, Tahoma, sans-serif" font-size="26" font-weight="700" fill="#c9d1d9">Telegram</text>
+
+  <!-- Bale node -->
+  <circle cx="945" cy="190" r="86" fill="url(#baleC)"/>
+  <circle cx="945" cy="190" r="86" fill="none" stroke="#ffffff" stroke-opacity="0.25" stroke-width="3"/>
+  <text x="945" y="225" text-anchor="middle" font-family="Tahoma, sans-serif" font-size="110" font-weight="700" fill="#ffffff">ب</text>
+  <text x="945" y="318" text-anchor="middle" font-family="Segoe UI, Tahoma, sans-serif" font-size="26" font-weight="700" fill="#c9d1d9">Bale · بله</text>
+
+  <!-- center title -->
+  <text x="600" y="182" text-anchor="middle" font-family="Segoe UI, Tahoma, sans-serif" font-size="58" font-weight="800" fill="#f0f6fc">TG&#8202;–&#8202;Bale Bridge</text>
+  <text x="600" y="232" text-anchor="middle" font-family="Segoe UI, Tahoma, sans-serif" font-size="24" fill="#8b949e">Two-way channel sync &#183; text · media · albums · edits · deletes</text>
+
+  <!-- swap arrows -->
+  <g transform="translate(600 288)" fill="none" stroke="url(#arc)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M -34 0 L 30 0 M 18 -12 L 32 0 L 18 12"/>
+    <path d="M 34 0 L -30 0 M -18 -12 L -32 0 L -18 12" transform="translate(0 26)"/>
+  </g>
+</svg>

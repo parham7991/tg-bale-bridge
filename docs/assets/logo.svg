@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="TG-Bale Bridge logo">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2AABEE"/>
+      <stop offset="55%" stop-color="#37A6E8"/>
+      <stop offset="100%" stop-color="#14C38E"/>
+    </linearGradient>
+    <linearGradient id="a" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.85"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="56" fill="url(#g)"/>
+  <rect x="6" y="6" width="244" height="244" rx="52" fill="none" stroke="#ffffff" stroke-opacity="0.22" stroke-width="4"/>
+
+  <!-- bridge -->
+  <path d="M 40 168 Q 128 44 216 168" fill="none" stroke="url(#a)" stroke-width="14" stroke-linecap="round"/>
+  <line x1="40" y1="168" x2="40" y2="196" stroke="#ffffff" stroke-width="14" stroke-linecap="round"/>
+  <line x1="216" y1="168" x2="216" y2="196" stroke="#ffffff" stroke-width="14" stroke-linecap="round"/>
+
+  <!-- pillars -->
+  <line x1="88" y1="128" x2="88" y2="196" stroke="#ffffff" stroke-width="8" stroke-linecap="round" opacity="0.7"/>
+  <line x1="128" y1="110" x2="128" y2="196" stroke="#ffffff" stroke-width="8" stroke-linecap="round" opacity="0.7"/>
+  <line x1="168" y1="128" x2="168" y2="196" stroke="#ffffff" stroke-width="8" stroke-linecap="round" opacity="0.7"/>
+
+  <!-- deck -->
+  <line x1="34" y1="196" x2="222" y2="196" stroke="#ffffff" stroke-width="14" stroke-linecap="round"/>
+
+  <!-- swap dots -->
+  <circle cx="72" cy="72" r="14" fill="#ffffff" opacity="0.95"/>
+  <circle cx="184" cy="72" r="14" fill="#ffffff" opacity="0.95"/>
+</svg>
