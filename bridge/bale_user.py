@@ -140,6 +140,17 @@ def _extract_id(obj: Any) -> int:
     return 0
 
 
+def _extract_user(obj: Any) -> Any:
+    """از پاسخ search_username، آبجکت کاربر/ربات را بیرون می‌کشد."""
+    for attr in ("user", "contact", "data", "peer"):
+        v = getattr(obj, attr, None)
+        if v is not None and hasattr(v, "id"):
+            return v
+    if hasattr(obj, "id") and (hasattr(obj, "access_hash") or hasattr(obj, "username")):
+        return obj
+    return None
+
+
 class BaleUserAPI:
     """BotAPI-compatible façade over an aiobale *user* client."""
 
@@ -590,6 +601,49 @@ class BaleUserAPI:
             return {"ok": True}
         except Exception as exc:
             raise BotAPIError(f"delete_message failed: {exc}") from exc
+
+    # ── ادمین‌کردن (سلفِ ادمین، ربات را ادمین می‌کند) ─────────────────────────
+
+    async def _resolve_user(self, user_ref: Any) -> Tuple[int, Any]:
+        """کاربر/ربات را به (id, آبجکت User) تبدیل می‌کند — @یوزرنیم یا شناسه."""
+        if isinstance(user_ref, int):
+            return user_ref, None
+        key = str(user_ref).strip().lstrip("@")
+        found = await self.client.search_username(key)
+        user = _extract_user(found)
+        if user is None:
+            raise BotAPIError(f"user not found: {user_ref!r}")
+        uid = _extract_id(user)
+        if not uid:
+            raise BotAPIError(f"user id not resolved: {user_ref!r}")
+        return int(uid), user
+
+    async def add_admin(self, chat_ref: Any, user_ref: Any,
+                        admin_name: Optional[str] = None) -> dict:
+        """کاربر/ربات را به کانال/گروه اضافه و ادمین می‌کند.
+
+        پیش‌نیاز: خودِ سلف در آن کانال ادمین باشد. اگر ربات از قبل عضو بود،
+        خطای عضویت نادیده گرفته می‌شود و فقط ارتقا انجام می‌شود.
+        """
+        await self._ensure_started()
+        cid = await self._resolve_id(chat_ref)
+        ct = await self._ensure_chat_type(cid)
+        if ct == ChatType.PRIVATE:
+            raise BotAPIError("در چت خصوصی نمی‌توان ادمین اضافه کرد")
+        user_id, user_obj = await self._resolve_user(user_ref)
+        try:
+            try:
+                await self.client.invite_user(cid, user_obj if user_obj is not None else user_id)
+            except Exception as exc:
+                msg = str(exc).lower()
+                if not any(t in msg for t in ("already", "member", "exists", "invite")):
+                    raise
+            await self.client.make_user_admin(cid, user_id, admin_name)
+            return {"ok": True, "chat_id": cid, "user_id": user_id}
+        except BotAPIError:
+            raise
+        except Exception as exc:
+            raise BotAPIError(f"add_admin failed: {exc}") from exc
 
     # ── files / meta ────────────────────────────────────────────────────────
 

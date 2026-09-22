@@ -33,6 +33,7 @@ CMD_ALIASES = {
     "resume": "resume", "ادامه": "resume", "ازسرگیری": "resume",
     "logs": "logs", "لاگ": "logs", "لاگ‌ها": "logs",
     "access": "access", "دسترسی": "access",
+    "promote": "promote", "ارتقا": "promote", "ادمین_کردن": "promote",
     "setup": "setup", "نصب": "setup",
 }
 
@@ -56,6 +57,7 @@ HELP = """🤖 پل همگام‌سازی تلگرام ⇄ بله
 ▫️ /pause · /resume — توقف/ادامهٔ موقت همگام‌سازی
 ▫️ /logs [تعداد] — آخرین خطوط لاگ (پیش‌فرض ۱۵)
 ▫️ /access — تست واقعی دسترسی سلف‌ها/ربات به کانال‌های هر جفت
+▫️ /promote [@ربات_بله] — سلف بله، ربات را به کانال‌ها اضافه و ادمین می‌کند
 ▫️ /setup — باز کردن ویزارد نصب (فقط در بات مدیریت تلگرام)
 ▫️ /id — در پاسخ/فوروارد پیام، شناسه چت را می‌گوید (برای /add)
 
@@ -225,6 +227,36 @@ class Admin:
             except Exception as e:
                 note = f"✘ {str(e)[:60]}"
             lines.append(f"  ▫️ سمت بله → {p['bale_label'] or p['bale_chat_id']}: {note}")
+        return "\n".join(lines)
+
+    async def cmd_promote(self, platform, args, msg):
+        """سلف بله (ادمین کانال) ربات بله را به کانال‌ها اضافه و ادمین می‌کند."""
+        from .bale_user import BaleUserAPI
+
+        if not isinstance(self.bale, BaleUserAPI):
+            return ("🛡 این کار با سلف بله انجام می‌شود — در حالت ربات ممکن نیست.\n"
+                    "BALE_MODE=user کنید (یا از ویزارد تلگرام: 🛡 ادمین‌کردن ربات).")
+        args = [a for a in (args or []) if a]
+        pairs = self.db.list_pairs()
+        if args and args[0].isdigit():
+            pid = int(args[0])
+            pairs = [p for p in pairs if p["id"] == pid] or pairs
+            bot_ref = args[1] if len(args) > 1 else None
+        else:
+            bot_ref = args[0] if args else None
+        if not pairs:
+            return "هنوز جفتی ثبت نشده — /add"
+        if not bot_ref:
+            return ("یوزرنیم ربات بله را بدهید: /promote @my_bale_bot\n"
+                    "(یا از ویزارد بات تلگرام: 🛡 ادمین‌کردن ربات)")
+        lines = ["🛡 نتیجهٔ ادمین‌کردن:"]
+        for p in pairs:
+            label = p["bale_label"] or p["bale_chat_id"]
+            try:
+                await self.bale.add_admin(p["bale_chat_id"], bot_ref)
+                lines.append(f"  ▫️ {label}: ✔ اضافه و ادمین شد")
+            except Exception as e:
+                lines.append(f"  ▫️ {label}: ✘ {str(e)[:100]}")
         return "\n".join(lines)
 
     async def cmd_setup(self, platform, args, msg):

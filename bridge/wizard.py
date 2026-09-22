@@ -89,6 +89,7 @@ class Wizard:
             ],
             [
                 {"text": "📊 وضعیت نصب", "callback_data": "wiz:status"},
+                {"text": "🛡 ادمین‌کردن ربات", "callback_data": "wiz:promote"},
                 {"text": "✅ اتمام و راه‌اندازی", "callback_data": "wiz:done"},
             ],
         ]
@@ -281,6 +282,9 @@ class Wizard:
         elif action == "pair":
             await self._answer(cb_id)
             await self._pair_begin(chat_id, None)
+        elif action == "promote":
+            await self._answer(cb_id)
+            await self._promote_begin(chat_id)
         elif action == "status":
             await self._answer(cb_id, "وضعیت به‌روز شد")
             await self._send(chat_id, self._menu_text(), self._menu_kb())
@@ -377,6 +381,50 @@ class Wizard:
         await self._send(chat_id, f"✅ جفت #{pair_id} ثبت شد — در حال تست دسترسی‌ها…")
         report = await self._access_report(pair_id)
         await self._send(chat_id, report, self._menu_kb())
+
+    # ------------------------------------------------------------ ادمین‌کردن ربات
+    async def _promote_begin(self, chat_id) -> None:
+        """سلف بله (که ادمین کانال است) ربات بله را اضافه و ادمین می‌کند."""
+        if not self.store.bale_self():
+            await self._send(chat_id,
+                             "برای ادمین‌کردن ربات، اول سلف بله را نصب کنید (دکمه 🟡) —\n"
+                             "سلف باید در کانال ادمین باشد.")
+            return
+        bb = self.store.bale_bot()
+        if not bb:
+            await self._send(chat_id, "اول ربات بله را ثبت کنید (دکمه 🤖).")
+            return
+        pairs = self.db.list_pairs()
+        if not pairs:
+            await self._send(chat_id, "اول جفت کانال بسازید (دکمه 🔗).")
+            return
+        await self._send(chat_id, "⏳ در حال افزودن ربات بله به کانال‌ها و ادمین‌کردن…")
+        api = await self._bale_user_api()
+        if api is None:
+            await self._send(chat_id, "❌ اتصال سلف بله برقرار نشد — دوباره تلاش کنید.")
+            return
+        bot_api = self._bale_bot_api()
+        me = bb.get("me") or {}
+        bot_ref = me.get("username") or me.get("id")
+        lines = ["🛡 نتیجهٔ ادمین‌کردن ربات بله:"]
+        try:
+            for p in pairs:
+                label = p["bale_label"] or p["bale_chat_id"]
+                try:
+                    await api.add_admin(p["bale_chat_id"], bot_ref)
+                    note = "✔ اضافه و ادمین شد"
+                    if bot_api is not None:
+                        ok, pnote = await probe_bale_access(bot_api, p["bale_chat_id"])
+                        note += " — تست ارسال: " + ("✔" if ok else f"✘ {pnote}")
+                except Exception as e:
+                    note = f"✘ {str(e)[:120]}"
+                lines.append(f"  ▫️ {label}: {note}")
+        finally:
+            try:
+                await api.close()
+            except Exception:
+                pass
+        await self._send(chat_id, "\n".join(lines), self._menu_kb())
 
     # ------------------------------------------------------------ گزارش دسترسی
     async def _access_report(self, pair_id: int | None = None) -> str:

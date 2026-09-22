@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-09-22
+
+### Added — 🛡 the selfbot can now promote the Bale bot itself
+- **`BaleUserAPI.add_admin(chat, user)`** — when the Bale selfbot is a channel admin,
+  it can add the Bale bot to the channel and grant admin: `search_username` (resolve
+  the bot with its access_hash) → `invite_user` → `make_user_admin` (aiobale internal
+  API); "already member" is tolerated, denials surface as clear errors
+- Wizard button **🛡 ادمین‌کردن ربات** — runs the flow for every paired channel and
+  finishes with a **real send-test through the bot itself** (✔/✘ per channel)
+- New admin command **`/promote [@bot]`** (works from every panel surface; in bot
+  mode returns a friendly hint)
+- 10 new tests (FSM, invite/promote ordering, already-member tolerance, denial
+  errors, private-chat guard) — **126 total**, ruff clean
+
+[2.1.0]: https://github.com/parham7991/tg-bale-bridge/compare/v2.0.0...v2.1.0
+
 ## [2.0.0] - 2026-09-22
 
 ### Added — 🧙‍♂️ the one-token installer
