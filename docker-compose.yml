@@ -1,0 +1,10 @@
+services:
+  bridge:
+    build: .
+    container_name: tg-bale-bridge
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./data:/app/data
+    # برای ساخت سشن تلگرام، ابتدا `python login.py` را بیرون از داکر اجرا کنید
+    # یا یک بار داخل کانتینر: docker compose run --rm bridge python login.py
