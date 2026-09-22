@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.17.4] - 2026-09-22
+
+### Fixed — live pairing: Bale CHANNEL sends + message-id capture
+- **Channel type detection**: aiobale's `FullGroup.group_type` is an
+  `IntEnum` (`GROUP=0`, `CHANNEL=1`) — `str()` yields `"1"`, so the old
+  `"CHANNEL" in str(gt)` check never matched and every Bale **channel** was
+  classified as a group → `send_message` failed with
+  `topic 3: InvalidArgument`. Detection now compares the value (`== 1` /
+  enum) in `resolver.ensure_chat_type` + `profile.get_chat`. Verified live:
+  self → channel send works after the fix.
+- **Sent-message id capture**: aiobale `Message` carries its id in `.id`
+  (not `.message_id`) — `snapshot_result` now reads `id`/`rid` too (attr +
+  dict shapes) so delete/edit mapping works for self-side posts.
+- **Wizard bot-admin step**: `NOT_APPROVED` now gets a clear explanation —
+  Bale requires bot approval for channels; in selfbot mode the bot is only
+  the management panel (posting goes through the self account), so this is
+  non-blocking. Access report wording softened for the same case.
+
+### Tests
+- regressions: IntEnum channel mapping (resolver + cache), snapshot id
+  extraction (attr + legacy + missing) → **343 green**
+
 ## [2.17.3] - 2026-09-22
 
 ### Fixed — headless full-mode boot: Telegram self side

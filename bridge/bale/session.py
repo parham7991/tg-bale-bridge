@@ -154,7 +154,19 @@ class BaleSession:
             msg = msg[-1] if msg else None
         if msg is None:
             return {"message_id": 0, "ok": True}
-        mid = int(getattr(msg, "message_id", 0) or 0)
+        # aiobale Message شناسه را در ``id`` دارد (نه message_id) — هر دو را ببین
+        mid = 0
+        for attr in ("message_id", "id", "rid"):
+            v = getattr(msg, attr, None)
+            if isinstance(v, int) and v:
+                mid = v
+                break
+        if not mid and isinstance(msg, dict):
+            for key in ("message_id", "id", "rid"):
+                v = msg.get(key)
+                if isinstance(v, int) and v:
+                    mid = v
+                    break
         self.remember_date(int(chat_id), mid, getattr(msg, "date", 0))
         return {"message_id": mid, "ok": True}
 

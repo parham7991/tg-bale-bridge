@@ -290,3 +290,55 @@ def test_extract_id_reads_group_field():
     assert extract_id(NS(user=NS(id=77), group=None)) == 77
     # مستقیم روی خود Peer
     assert extract_id(NS(id=5)) == 5
+
+
+# ────────── رگرسیون v2.17.4: تشخیص کانال (IntEnum) و استخراج شناسه پیام ──────────
+
+def test_ensure_chat_type_maps_intenum_channel(tmp_path):
+    """group_type در aiobale یک IntEnum است (CHANNEL=1) — str() عدد می‌دهد."""
+    from types import SimpleNamespace as NS
+
+    from aiobale.enums import ChatType
+
+    from bridge.bale.resolver import ResolverEngine
+
+    sent = {}
+
+    class FakeFull:
+        group_type = 1                      # GroupType.CHANNEL (IntEnum → '1')
+        title = "MARVELL"
+
+    class FakeClient:
+        async def get_full_group(self, cid):
+            return FakeFull()
+
+    def note_chat(cid, info):
+        sent[str(cid)] = info
+
+    ses = NS(client=FakeClient(), chat_types={}, chat_meta={}, note_chat=note_chat)
+    r = ResolverEngine(ses)
+    ct = run(r.ensure_chat_type(287806378))
+    assert ct == ChatType.CHANNEL
+    assert sent["287806378"]["type"] == "channel"
+    # کش: دوباره → بدون فراخوانی کلاینت
+    ct2 = run(r.ensure_chat_type(287806378))
+    assert ct2 == ChatType.CHANNEL
+
+
+def test_snapshot_result_reads_aiobale_id_attr():
+    """aiobale Message شناسه را در ``id`` دارد — snapshot هر دو را ببیند."""
+    from types import SimpleNamespace as NS
+
+    from bridge.bale.session import BaleSession
+
+    calls = []
+    fake = NS(remember_date=lambda c, m, d: calls.append((c, m, d)))
+    out = BaleSession.snapshot_result(fake, 287806378, NS(id=4242, date=77))
+    assert out == {"message_id": 4242, "ok": True}
+    assert calls == [(287806378, 4242, 77)]
+    # شکل قدیمی message_id هم کار کند
+    out2 = BaleSession.snapshot_result(fake, 1, NS(message_id=9, date=1))
+    assert out2["message_id"] == 9
+    # هیچ‌کدام → صفر
+    out3 = BaleSession.snapshot_result(fake, 1, NS(x=1))
+    assert out3["message_id"] == 0

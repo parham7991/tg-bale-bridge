@@ -44,5 +44,11 @@ class AccessReportEngine:
                 lines.append("  ▫️ سلف بله: — تنظیم نشده")
             if bale_bot is not None:
                 ok, note = await BaleBotGateway.probe(bale_bot, p["bale_chat_id"])
-                lines.append(f"  ▫️ ربات بله → کانال بله: {note} (در حالت سلف لازم نیست)")
+                if ok:
+                    lines.append(f"  ▫️ ربات بله → کانال بله: {note}")
+                elif bale_user is not None:
+                    lines.append(f"  ▫️ ربات بله → کانال بله: — لازم نیست "
+                                 f"(حالت سلف: ارسال با سلف انجام می‌شود) [{note}]")
+                else:
+                    lines.append(f"  ▫️ ربات بله → کانال بله: {note}")
         return "\n".join(lines)

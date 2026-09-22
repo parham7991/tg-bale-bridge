@@ -50,7 +50,14 @@ class PromoteEngine:
                         ok, pnote = await BaleBotGateway.probe(bot_api, p["bale_chat_id"])
                         note += " — تست ارسال: " + ("✔" if ok else f"✘ {pnote}")
                 except Exception as e:
-                    note = f"✘ {str(e)[:120]}"
+                    err = str(e)
+                    if "NOT_APPROVED" in err:
+                        note = ("✘ بله سرور اجازهٔ ادمین‌کردن این ربات را نداد "
+                                "(NOT_APPROVED — ربات‌ها برای کانال‌ها تأیید می‌خواهند).\n"
+                                "      ✅ مهم نیست: ارسال‌ها با **سلف بله** انجام می‌شود "
+                                "و ربات فقط پنل مدیریت است (در چت خصوصی ربات کار می‌کند).")
+                    else:
+                        note = f"✘ {err[:120]}"
                 lines.append(f"  ▫️ {label}: {note}")
         finally:
             try:

@@ -57,8 +57,10 @@ class ProfileEngine:
         out: dict = {"id": cid, "type": self.s.chat_types.get(str(cid))}
         try:
             full = await self.s.client.get_full_group(cid)
-            gt = str(getattr(full, "group_type", "") or "").upper()
-            name = "channel" if "CHANNEL" in gt else "group"
+            # group_type یک IntEnum است (GROUP=0, CHANNEL=1) — str() عدد می‌دهد!
+            gt = getattr(full, "group_type", None)
+            is_channel = (gt == 1) or ("CHANNEL" in str(gt).upper())
+            name = "channel" if is_channel else "group"
             out["type"] = name
             out["title"] = unwrap(getattr(full, "title", None))
             uname = unwrap(getattr(full, "username", None))

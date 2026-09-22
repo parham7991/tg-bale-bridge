@@ -199,7 +199,7 @@ def test_dashinfo_shows_address_and_one_time_password(monkeypatch):
 # ───────────────────────────── سازگاری ─────────────────────────────
 
 def test_package_version_and_dir_kb():
-    assert VERSION == "2.17.2"
+    assert VERSION == "2.17.4"
     assert "dir:both" in str(DIR_KB)
 
 

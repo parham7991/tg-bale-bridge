@@ -41,8 +41,10 @@ class ResolverEngine:
         except Exception:
             self.s.chat_types.setdefault(key, "private")
             return ChatType.PRIVATE
-        gt = str(getattr(full, "group_type", "") or "").upper()
-        name = "channel" if "CHANNEL" in gt else "group"
+        # group_type یک IntEnum است (GROUP=0, CHANNEL=1) — str() عدد می‌دهد!
+        gt = getattr(full, "group_type", None)
+        is_channel = (gt == 1) or ("CHANNEL" in str(gt).upper())
+        name = "channel" if is_channel else "group"
         self.s.chat_types[key] = name
         self.s.note_chat(chat_id, {"type": name, "title": getattr(full, "title", None)})
         return _NAME_CHAT_TYPES[name]
