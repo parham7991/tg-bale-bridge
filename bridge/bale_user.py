@@ -183,9 +183,11 @@ class BaleUserAPI:
     # ── plumbing ────────────────────────────────────────────────────────────
 
     def _register_handlers(self) -> None:
-        self.dp.message(self._on_message)
-        self.dp.message_edited(self._on_edited)
-        self.dp.message_deleted(self._on_deleted)
+        # ثبت aiobale به‌صورت decorator-factory است: dp.message()(handler)
+        # (dp.message(handler) هندلر را «فیلتر» ثبت می‌کند — باگ زندهٔ تست‌شده!)
+        self.dp.message()(self._on_message)
+        self.dp.message_edited()(self._on_edited)
+        self.dp.message_deleted()(self._on_deleted)
 
     def _bump(self) -> int:
         self._offset += 1
