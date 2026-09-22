@@ -62,6 +62,13 @@ class Wizard:
         self.store = store
         self.admin = admin
         self._st: dict = {}     # chat_id → {"state": str, "data": dict}
+        # موتور ورود سلف بله (همان منطق login_bale.py — یک منبع)
+        from .bale import BaleLoginEngine
+
+        self._bale_login = BaleLoginEngine(
+            getattr(cfg, "BALE_SESSION", "data/session"),
+            (getattr(cfg, "BALE_PHONE", "") or "").strip() or None,
+        )
 
     # ------------------------------------------------------------ کیبورد
     def _menu_kb(self) -> dict:
@@ -542,37 +549,12 @@ class Wizard:
 
     # ------------------------------------------------------------ بله: لاگین سلف
     async def _bale_request_code(self, phone: str) -> tuple[bool, str]:
-        from aiobale import Client
-        from aiobale.enums import AuthErrors
-
-        sess = Path(str(self.cfg.BALE_SESSION))
-        sess = sess if sess.suffix == ".bale" else sess.with_suffix(".bale")
-        client = Client(session_file=str(sess))
-        resp = await asyncio.wait_for(client.start_phone_auth(int(phone)), timeout=45)
-        if isinstance(resp, AuthErrors):
-            return False, f"خطای بله: {resp.name}"
-        txn = getattr(resp, "transaction_hash", None)
-        if not txn:
-            return False, "پاسخ نامعتبر سرور"
-        self._txns["hash"] = txn
-        return True, "کد ارسال شد"
+        """از موتور ورود بله — همان منطق، یک‌جا نگهداری می‌شود."""
+        return await self._bale_login.request_code(phone)
 
     async def _bale_validate(self, chat_id, code: str) -> tuple[bool, str]:
-        from aiobale import Client
-        from aiobale.enums import AuthErrors
-
-        txn = self._txns.get("hash")
-        if not txn:
-            return False, "اول شماره را بفرستید"
-        sess = Path(str(self.cfg.BALE_SESSION))
-        sess = sess if sess.suffix == ".bale" else sess.with_suffix(".bale")
-        sess.parent.mkdir(parents=True, exist_ok=True)
-        client = Client(session_file=str(sess))
-        resp = await asyncio.wait_for(client.validate_code(code, txn), timeout=45)
-        if isinstance(resp, AuthErrors):
-            return False, f"خطای بله: {resp.name}"
-        self._txns.pop("hash", None)
-        return True, "نشست ذخیره شد"
+        """از موتور ورود بله — همان منطق، یک‌جا نگهداری می‌شود."""
+        return await self._bale_login.validate_code(code)
 
     # ------------------------------------------------------------ بله: ربات
     def _bale_bot_api(self) -> BotAPI | None:

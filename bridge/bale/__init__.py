@@ -19,6 +19,7 @@
 """
 from .facade import BaleUserAPI
 from .gateway import BaleBotGateway
+from .login import BaleLoginEngine
 from .routing import BaleEventRouter
 from .session import BaleSession
 from .types_map import (
@@ -32,6 +33,7 @@ from .version import VERSION
 
 __all__ = [
     "BaleUserAPI", "BaleBotGateway", "BaleEventRouter", "BaleSession",
+    "BaleLoginEngine",
     "classify_document", "_classify_document", "extract_id", "extract_user",
     "unwrap", "VERSION",
 ]

@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0] - 2026-09-22
+
+### Changed — 🔐 Bale selfbot login: dedicated engine
+- **All remaining Bale-selfbot auth logic extracted into `bridge/bale/login.py`**
+  (**BaleLoginEngine**) — the last selfbot logic that lived outside the package:
+  - `request_code()` / `validate_code()` — two-step phone auth with the login
+    transaction kept inside the engine (was duplicated inline in the wizard)
+  - `build_client()` / `session_path()` — single source for session-file
+    normalization (`.bale` suffix + mkdir; was duplicated in 3 places)
+  - `run_interactive()` — the console flow of `login_bale.py`
+- `login_bale.py` is now a thin wrapper over the engine
+- `wizard._bale_request_code` / `wizard._bale_validate` delegate to the engine —
+  also fixes a latent crash (the wizard's `_txns` dict was never initialized)
+- 12 new offline tests (session path, both auth steps, auth/network errors,
+  pending-txn state, wizard + script delegation) — **173 total**, ruff clean
+
+[2.5.0]: https://github.com/parham7991/tg-bale-bridge/compare/v2.4.0...v2.5.0
+
 ## [2.4.0] - 2026-09-22
 
 ### Changed — 🟡 Bale logic: from one 741-line file to a modular engine package
