@@ -40,7 +40,9 @@ class ListenEngine:
                 logger.error("getUpdates failed: %s", e)
                 await asyncio.sleep(ERROR_SLEEP)
                 continue
-            except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+            except (aiohttp.ClientError, asyncio.TimeoutError, TimeoutError) as e:
+                # در پایتون ≤3.10 بُilt-in TimeoutError با asyncio.TimeoutError
+                # یکی نیست — هر دو گرفته می‌شوند تا حلقه هرگز نمیرد.
                 logger.error("getUpdates network error: %s", e)
                 await asyncio.sleep(ERROR_SLEEP)
                 continue

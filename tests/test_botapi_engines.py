@@ -47,9 +47,10 @@ class _PostCM:
 class FakeSession:
     """نشست جعلی — پاسخ‌های نوبتی از صف."""
 
-    def __init__(self, responses=None, fail_times=0):
+    def __init__(self, responses=None, fail_times=0, fail_exc=None):
         self.responses = list(responses or [])
         self.fail_times = fail_times
+        self.fail_exc = fail_exc                 # پیش‌فرض: asyncio.TimeoutError
         self.posts = []          # (url, json یا form)
         self.failed = 0
         self.closed = False
@@ -58,7 +59,7 @@ class FakeSession:
         self.posts.append((url, json if json is not None else data))
         if self.failed < self.fail_times:
             self.failed += 1
-            raise asyncio.TimeoutError("boom")
+            raise self.fail_exc if self.fail_exc else asyncio.TimeoutError("boom")
         return _PostCM(FakeResp(self.responses.pop(0) if self.responses
                                 else {"ok": True}))
 
@@ -169,6 +170,17 @@ def test_call_rate_limit_retries_then_succeeds(no_sleep):
     api.session_engine.session = fs
     assert run(api.call("sendMessage", {"chat_id": 1, "text": "x"})) == 7
     assert len(fs.posts) == 2 and no_sleep == [2.5]
+
+
+def test_call_builtin_timeout_retry_regression(no_sleep):
+    """رگرسیون پایتون 3.10: بُilt-in TimeoutError از OSError می‌آید و با
+    asyncio.TimeoutError یکی نیست — باید گرفته شود و retry شود، نه فرار."""
+    fs = FakeSession(responses=[{"ok": True, "result": 7}], fail_times=1,
+                     fail_exc=TimeoutError)
+    api = BotAPI("t")
+    api.session_engine.session = fs
+    assert run(api.call("getMe")) == 7
+    assert fs.failed == 1 and no_sleep == [1.5]
 
 
 def test_call_network_failure_retries_then_raises(no_sleep):

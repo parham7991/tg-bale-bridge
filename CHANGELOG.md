@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.17.1] - 2026-09-22
+
+### Fixed — Python 3.10 compatibility (found in live-server testing)
+- **`TimeoutError` handling in the Bot-API client**: on Python ≤3.10 the
+  built-in `TimeoutError` (subclass of `OSError`) is **not** the same as
+  `asyncio.TimeoutError`, so a builtin timeout raised inside `call()` or the
+  `listen()` loop escaped the `except` clauses — killing the retry path and
+  the never-die polling loop (both are identical on 3.11+, which is why it
+  never showed locally). Both `bridge/botapi/transport.py` (call retry) and
+  `bridge/botapi/events.py` (listen loop) now catch builtins too.
+- Regression tests: builtin-`TimeoutError` retry in transport + the existing
+  listen-loop test now passes on 3.10
+- Found by running the full suite on the production Ubuntu 22.04
+  (Python 3.10.12) server; 339 tests green there as well
+
 ## [2.17.0] - 2026-09-22
 
 ### Changed — 📜 logbuf package: the log buffer goes modular

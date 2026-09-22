@@ -78,7 +78,9 @@ class CallEngine:
             async with session.post(build_url(self.api.base, self.api.token, method),
                                     json=params) as resp:
                 return await resp.json(content_type=None)
-        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+        except (aiohttp.ClientError, asyncio.TimeoutError, TimeoutError) as e:
+            # نکته: در پایتون ≤3.10 بُilt-in TimeoutError از OSError می‌آید و
+            # با asyncio.TimeoutError یکی نیست — هر دو را می‌گیریم (در 3.11+ همان است).
             if attempt < NETWORK_RETRIES:
                 await asyncio.sleep(1.5 * (attempt + 1))
                 return None
