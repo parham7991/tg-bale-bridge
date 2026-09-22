@@ -11,6 +11,8 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 
+.cache/
+
 # live test scratch — session/credentials never go to git
 live_test/session.bale
 live_test/txn.json
