@@ -108,6 +108,9 @@
 | **`bridge/textfmt/`** | 🎨 بستهٔ قالب‌بندی | ↓ تفکیک کامل ↓ |
 | `textfmt/tg2bale.py` / `bale2tg.py` | 🔤 تبدیل دوطرفه | موجودیت‌های تلگرام ⇄ Markdown بله با ریاضی UTF-16 |
 | `textfmt/splitting.py` / `headers.py` / `renderers.py` | ✂️ برش، هدر، جانشین | چندپیامی‌کردن، «باز‌ارسال از»، نظرسنجی/تاس/مکان |
+| **`bridge/appcfg/`** | ⚙️ بستهٔ پیکربندی | ↓ تفکیک کامل ↓ (config.py شیم است) |
+| `appcfg/envparse.py` / `sections.py` / `validator.py` | 🔎 خواندن و اعتبارسنجی | مکانیک int/float/flag، بخش‌های .env، فهرست مشکل‌ها |
+| `appcfg/paths.py` / `types_map.py` / `facade.py` | 📁 مسیرها، ثابت‌ها، تزریق | پوشه‌های data، سقف‌های API بله، populate با validate زنده |
 | **`bridge/runtime/`** | 🚀 بستهٔ چرخهٔ اجرا | ↓ تفکیک کامل ↓ (نقطهٔ ورود ماژولار) |
 | `runtime/facade.py` | 🧩 Runtime | جریان کامل بوت — همان رفتار main قدیمی |
 | `runtime/overrides.py` / `installer.py` | ⚙️ اورراید و نصاب | store→cfg (فقط خانه‌های خالی)، بوت سبک ویزارد |

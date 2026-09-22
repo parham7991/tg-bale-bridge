@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.16.0] - 2026-09-22
+
+### Changed — ⚙️ appcfg package: configuration goes modular — map complete
+- **All config logic extracted from `config.py` into `bridge/appcfg/`**
+  (the last flat module — the modularization map is now COMPLETE):
+  - `bridge/appcfg/types_map.py` — Bale API limits + text/caption caps +
+    `BALE_MODES`
+  - `bridge/appcfg/envparse.py` — **EnvParseEngine**: int/float/flag env
+    mechanics on any mapping (offline-testable; corrupt value → default)
+  - `bridge/appcfg/paths.py` — **PathsEngine**: BASE/DATA/TMP/DB/SESSION
+    paths with the same mkdir side effects
+  - `bridge/appcfg/sections.py` — **SectionsEngine**: tg / bale / control /
+    general / dash — each section one method, flat dict out
+  - `bridge/appcfg/validator.py` — **ValidatorEngine**: pure + parameterized
+    (runs on any values mapping) — same Persian problem list
+  - `bridge/appcfg/facade.py` — `load()` + `populate(ns)`: injects values
+    into the `config` module namespace and binds a **live** `validate()`
+    closure that reads current module values
+- **`config.py` stays at the repo root as a 10-line shim** —
+  `import config as cfg` + `cfg.X = ...` (OverridesEngine) work exactly as
+  before; `validate()` sees runtime mutations because it closes over the
+  module namespace
+
+### Tests
+- 8 new offline tests (`tests/test_appcfg_engines.py`): env parse mechanics,
+  every section (defaults + env-wins + `0`-coalescing), paths mkdirs,
+  all validator branches, live-namespace `validate`, shim surface
+
 ## [2.15.0] - 2026-09-22
 
 ### Changed — 🚀 runtime package: the entry point goes modular
