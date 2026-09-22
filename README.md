@@ -7,7 +7,7 @@
 [![CI](https://github.com/parham7991/tg-bale-bridge/actions/workflows/ci.yml/badge.svg)](https://github.com/parham7991/tg-bale-bridge/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-141%20✅-success)](tests/)
+[![Tests](https://img.shields.io/badge/tests-161%20✅-success)](tests/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 **پل دوطرفهٔ همگام‌سازی کانال‌های تلگرام و بله** — هرچه یک‌طرف بگذارید، بی‌کم‌وکاست در طرف دیگر می‌نشیند.<br/>
@@ -47,7 +47,7 @@
 | 🌐 **داشبورد وب همه‌فن‌حریف** | دارک، RTL، زنده: جفت‌ها، جهت‌ها، توقف/ادامه، لاگ زنده، تست دسترسی، ادمین‌کردن ربات — همه از مرورگر |
 | 🎛 **پنل چهارسطحی متصل** | مدیریت از چهار جا: ربات بله · خودچت بله (سلف‌بات جواب می‌دهد!) · بات تلگرام · Saved Messages — همه یک پنل |
 | 🤖 **بات تلگرام برای مدیریت سلف‌بات** | کنترل کامل از راه دور: توقف/ادامه، لاگ زنده، هویت، ساخت جفت — با بات تلگرام |
-| 🧪 **۱۴۱ تست آفلاین** | pytest شامل تست‌های واحد و سرتاسری — CI روی پایتون ۳.۱۰ تا ۳.۱۲ |
+| 🧪 **۱۶۱ تست آفلاین** | pytest شامل تست‌های واحد و سرتاسری — CI روی پایتون ۳.۱۰ تا ۳.۱۲ |
 | 🐳 **داکر و systemd** | آمادهٔ استقرار روی سرور |
 
 ## 🎬 نمای کلی قابلیت‌ها
@@ -67,6 +67,30 @@
 | **حذف پیام** | ✅ | ✅ *(حالت سلف‌بات)* · ⛔ *حالت ربات* |
 
 ## 🏗 معماری
+
+**هر بخش، یک ماژول مستقل و یک موتور متمرکز:**
+
+| ماژول | موتور | مسئولیت |
+|---|---|---|
+| `bridge/transfer.py` | 🔄 موتور آینه‌سازی | صف‌ها، محتوا، آلبوم، ویرایش، حذف — قلب پل |
+| `bridge/admin.py` | 🎛 موتور پنل | دستورات مدیریتی روی همهٔ سطوح |
+| `bridge/wizard.py` | 🧙‍♂️ موتور نصب | ویزارد داخل بات + پروب‌های واقعی |
+| `bridge/tg_user.py` / `tg_bot.py` | ✈️ سطح‌های تلگرام | سلف (Telethon) و بات کنترل |
+| `bridge/bale_user.py` / `bot_api.py` | 🟡 سطح‌های بله | سلف (aiobale) و BotAPI عمومی |
+| `bridge/db.py` / `store.py` | 💾 موتور داده | نگاشت‌ها + تنظیمات زمان اجرا |
+| `bridge/formatter.py` | 🎨 موتور قالب | تلگرام ⇄ بله مارک‌داون، UTF-16 |
+| `bridge/logbuf.py` | 📜 موتور لاگ | بافر حلقه‌ای زنده |
+| **`bridge/dashboard/`** | 🌐 بستهٔ داشبورد | ↓ تفکیک کامل ↓ |
+| `dashboard/app.py` | مونتاژ | کلاس Dashboard + aiohttp |
+| `dashboard/api.py` | لایهٔ HTTP | میدلور (خطا/CSRF/سشن) + هندلرهای نازک |
+| `dashboard/auth.py` | 🔐 احراز هویت | PBKDF2، سشن، قفل تلاش |
+| `dashboard/context.py` | 🧭 زمینه | دسترسی تایپ‌شده به وضعیت زنده |
+| `dashboard/engines/status.py` | 📊 وضعیت | اسنپ‌شات کامل پل |
+| `dashboard/engines/pairs.py` | 🔗 جفت‌ها | CRUD + resolve واقعی |
+| `dashboard/engines/control.py` | ⏸ کنترل | توقف/ادامهٔ سراسری |
+| `dashboard/engines/logs.py` | 📜 لاگ | دمِ بافر حلقه‌ای |
+| `dashboard/engines/ops.py` | 🛡 عملیات | پروب دسترسی + ادمین‌کردن ربات |
+
 
 ```mermaid
 flowchart LR
@@ -280,7 +304,7 @@ docker compose logs -f
 
 ```bash
 make dev      # نصب وابستگی‌های توسعه
-make test     # اجرای ۱۴۱ تست آفلاین (بدون نیاز به اکانت واقعی)
+make test     # اجرای ۱۶۱ تست آفلاین (بدون نیاز به اکانت واقعی)
 make lint     # ruff
 ```
 

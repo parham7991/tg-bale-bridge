@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-09-22
+
+### Changed — 🧱 per-section modules & engines (backend architecture)
+- **Dashboard backend split from one flat file into a package** — every section is its
+  own module with one focused engine:
+  - `bridge/dashboard/app.py` — Dashboard facade + aiohttp assembly
+  - `bridge/dashboard/api.py` — thin HTTP layer (error/CSRF/session middlewares, handlers)
+  - `bridge/dashboard/auth.py` — **AuthEngine**: PBKDF2, sessions, lockout (no HTTP knowledge)
+  - `bridge/dashboard/context.py` — **RuntimeCtx**: typed live-state access for all engines
+  - `bridge/dashboard/engines/{status,pairs,control,logs,ops}.py` — domain engines that
+    raise `DashboardError(msg, status)`; zero HTTP concerns
+- Fixed: control-bot identity now reported correctly in `/api/status` (was always empty —
+  it read a key nobody populated; now sourced from the admin panel's live info), and
+  tokens/phones are stripped from every account snapshot
+- Frontend untouched (`dash.html` moved into the package) — same API contract
+- 20 new engine-level tests (auth flows, lockout, session lifecycle, salted hashes,
+  pairs CRUD, control pause/resume, status snapshot + no-token-leak, logs, ops guards) —
+  **161 total**, ruff clean
+
+[2.3.0]: https://github.com/parham7991/tg-bale-bridge/compare/v2.2.0...v2.3.0
+
 ## [2.2.0] - 2026-09-22
 
 ### Added — 🌐 the web dashboard

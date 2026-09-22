@@ -37,7 +37,8 @@ flowchart LR
 | Transfer engine | `bridge/transfer.py` | Media classification, download/re-upload, albums, replies, forwards, edits, deletes |
 | Bot-API clients | `bridge/bot_api.py` | Generic client for **both** Bale and Telegram Bot API: multipart uploads, file downloads, long-polling, `retry_after` handling |
 | Runtime settings | `bridge/store.py` | DB-backed config (accounts, admin, tokens) — `.env` shrinks to one token |
-| Web dashboard | `bridge/dashboard.py` + `bridge/dash.html` | Browser control panel: live status, pairs CRUD, pause, logs, access probes, bot promotion — PBKDF2 + session-cookie auth |
+| Web dashboard | `bridge/dashboard/` (package) | `app.py` assembly · `api.py` thin HTTP · `auth.py` AuthEngine (PBKDF2/sessions/lockout) · `context.py` RuntimeCtx · `engines/{status,pairs,control,logs,ops}` domain engines |
+
 | Installer wizard | `bridge/wizard.py` | In-bot setup: Telegram/Bale selfbot logins, Bale bot token, channel pairing with inline buttons, live access probes, auto-restart |
 | Bale selfbot adapter | `bridge/bale_user.py` | `BALE_MODE=user`: BotAPI-compatible façade over `aiobale` (logged-in user account). Normalizes internal messages to Bot-API shape and surfaces `message_deleted` events as `deleted_messages` updates — Bale→Telegram delete sync |
 | TG control bot | `bridge/tg_bot.py` | Remote management of the self-bot via a Telegram bot (same command panel) |
