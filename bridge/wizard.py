@@ -90,6 +90,9 @@ class Wizard:
             [
                 {"text": "📊 وضعیت نصب", "callback_data": "wiz:status"},
                 {"text": "🛡 ادمین‌کردن ربات", "callback_data": "wiz:promote"},
+                {"text": "🌐 داشبورد", "callback_data": "wiz:dash"},
+            ],
+            [
                 {"text": "✅ اتمام و راه‌اندازی", "callback_data": "wiz:done"},
             ],
         ]
@@ -282,6 +285,9 @@ class Wizard:
         elif action == "pair":
             await self._answer(cb_id)
             await self._pair_begin(chat_id, None)
+        elif action == "dash":
+            await self._answer(cb_id)
+            await self._dash_info(chat_id)
         elif action == "promote":
             await self._answer(cb_id)
             await self._promote_begin(chat_id)
@@ -381,6 +387,23 @@ class Wizard:
         await self._send(chat_id, f"✅ جفت #{pair_id} ثبت شد — در حال تست دسترسی‌ها…")
         report = await self._access_report(pair_id)
         await self._send(chat_id, report, self._menu_kb())
+
+    # ------------------------------------------------------------ داشبورد وب
+    async def _dash_info(self, chat_id) -> None:
+        from .dashboard import Dashboard
+
+        if not getattr(self.cfg, "DASH_ENABLED", True):
+            await self._send(chat_id, "داشبورد خاموش است (DASH_ENABLED=0).")
+            return
+        user, password, created = Dashboard.ensure_credentials(self.store)
+        host = getattr(self.cfg, "DASH_HOST", "0.0.0.0")
+        port = getattr(self.cfg, "DASH_PORT", 8080)
+        addr = f"http://{host}:{port}" if host != "0.0.0.0" else f"http://<IP-سرور>:{port}"
+        text = f"🌐 داشبورد وب:\n{addr}\n▫️ یوزرنیم: {user}\n"
+        text += (f"▫️ رمز اولیه: {password}\n⚠️ فقط همین‌جا نشان داده می‌شود — عوضش کنید!\n"
+                 if created else
+                 "▫️ رمز: ست شده است (با /passwd عوض کنید یا از خود داشبورد).\n")
+        await self._send(chat_id, text, self._menu_kb())
 
     # ------------------------------------------------------------ ادمین‌کردن ربات
     async def _promote_begin(self, chat_id) -> None:

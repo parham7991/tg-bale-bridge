@@ -56,6 +56,11 @@ ADMIN_TG_ID = _int("ADMIN_TG_ID")
 ALBUM_DELAY = _float("ALBUM_DELAY", 0.9)
 BALE_POLL_TIMEOUT = _int("BALE_POLL_TIMEOUT", 30) or 30
 
+# --- داشبورد وب ---
+DASH_ENABLED = os.getenv("DASH_ENABLED", "1").strip().lower() not in ("0", "false", "no")
+DASH_HOST = os.getenv("DASH_HOST", "0.0.0.0").strip()
+DASH_PORT = _int("DASH_PORT", 8080) or 8080
+
 # محدودیت‌های API بله (مستندات docs.bale.ai)
 MAX_BALE_UPLOAD = 50 * 1024 * 1024        # حداکثر آپلود فایل (multipart)
 MAX_BALE_PHOTO = 10 * 1024 * 1024         # حداکثر آپلود عکس (multipart)

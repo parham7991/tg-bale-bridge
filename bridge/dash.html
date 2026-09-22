@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>پل تلگرام ⇄ بله — داشبورد</title>
+<style>
+:root{
+  --bg:#0b0f17;--bg2:#0e1420;--panel:rgba(255,255,255,.045);--panel2:rgba(255,255,255,.07);
+  --line:rgba(255,255,255,.09);--txt:#e8edf5;--dim:#8b96a8;--dim2:#5b6678;
+  --tg:#2aabee;--bale:#00c2a8;--ok:#31d185;--warn:#f5b83d;--err:#ff5c74;
+  --grad:linear-gradient(135deg,#2aabee,#00c2a8);
+  --r:16px;--shadow:0 18px 50px rgba(0,0,0,.45);
+  font-size:15px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:"Vazirmatn","Vazir",Tahoma,"Segoe UI",sans-serif;
+  background:
+    radial-gradient(1100px 500px at 85% -10%, rgba(42,171,238,.16), transparent 60%),
+    radial-gradient(900px 500px at 10% 110%, rgba(0,194,168,.13), transparent 60%),
+    var(--bg);
+  color:var(--txt);min-height:100vh;
+}
+::selection{background:rgba(42,171,238,.35)}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:8px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ───────────── login ───────────── */
+#login{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:50;
+  background:rgba(8,11,17,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);transition:.35s}
+#login.hide{opacity:0;pointer-events:none}
+.login-card{width:min(380px,92vw);background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.03));
+  border:1px solid var(--line);border-radius:22px;padding:34px 30px;box-shadow:var(--shadow);text-align:center}
+.login-card.shake{animation:shake .4s}
+@keyframes shake{20%{transform:translateX(-9px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(4px)}}
+.brand{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:26px}
+.brand .logo{width:64px;height:64px;border-radius:20px;background:var(--grad);display:grid;place-items:center;
+  font-size:30px;box-shadow:0 10px 30px rgba(42,171,238,.35)}
+.brand h1{font-size:1.25rem;font-weight:800}
+.brand p{color:var(--dim);font-size:.85rem}
+.field{position:relative;margin-bottom:14px}
+.field input{width:100%;padding:13px 44px 13px 14px;background:rgba(255,255,255,.05);border:1px solid var(--line);
+  border-radius:13px;color:var(--txt);font:inherit;outline:none;transition:.2s}
+.field input:focus{border-color:rgba(42,171,238,.55);box-shadow:0 0 0 4px rgba(42,171,238,.12)}
+.field .ic{position:absolute;right:14px;top:50%;transform:translateY(-50%);opacity:.55;font-size:1rem}
+.btn{border:none;cursor:pointer;font:inherit;color:#fff;background:var(--grad);border-radius:13px;
+  padding:13px 18px;font-weight:700;transition:.2s;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn[disabled]{opacity:.55;pointer-events:none}
+.btn.ghost{background:rgba(255,255,255,.07);border:1px solid var(--line);font-weight:600}
+.btn.danger{background:linear-gradient(135deg,#ff5c74,#e0355a)}
+.btn.small{padding:8px 13px;border-radius:10px;font-size:.85rem}
+#loginErr{color:var(--err);font-size:.85rem;min-height:1.2em;margin-top:10px}
+
+/* ───────────── app shell ───────────── */
+#app{display:none;max-width:1240px;margin:0 auto;padding:20px 22px 40px}
+#app.show{display:block}
+header.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 4px 20px}
+.top .logo{width:44px;height:44px;border-radius:14px;background:var(--grad);display:grid;place-items:center;font-size:21px;
+  box-shadow:0 8px 24px rgba(42,171,238,.3)}
+.top .titles{margin-right:2px}
+.top .titles b{font-size:1.05rem}
+.top .titles small{display:block;color:var(--dim);font-size:.78rem}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-inline-start:auto}
+.chip{display:inline-flex;align-items:center;gap:7px;background:var(--panel);border:1px solid var(--line);
+  padding:7px 12px;border-radius:999px;font-size:.82rem;color:var(--dim)}
+.chip b{color:var(--txt);font-weight:600}
+.chip .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.chip.gray .dot{background:var(--dim2);box-shadow:none}
+
+.toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.switch{display:inline-flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);
+  border-radius:999px;padding:8px 14px 8px 8px;cursor:pointer;user-select:none;transition:.2s}
+.switch:hover{border-color:rgba(255,255,255,.2)}
+.switch .knob{width:40px;height:22px;border-radius:99px;background:rgba(255,255,255,.12);position:relative;transition:.25s}
+.switch .knob::after{content:"";position:absolute;top:3px;right:3px;width:16px;height:16px;border-radius:50%;
+  background:#fff;transition:.25s}
+.switch.on .knob{background:rgba(49,209,133,.45)}
+.switch.on .knob::after{right:calc(100% - 19px)}
+.switch .lbl{font-size:.9rem;font-weight:700}
+.switch .lbl small{display:block;font-weight:400;color:var(--dim);font-size:.72rem}
+.toolbar .spacer{flex:1}
+.uptime{color:var(--dim);font-size:.85rem;display:flex;align-items:center;gap:6px}
+.uptime b{color:var(--txt)}
+
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+.card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);
+  border-radius:var(--r);padding:18px;box-shadow:0 6px 24px rgba(0,0,0,.25);position:relative;overflow:hidden}
+.card h3{font-size:.95rem;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.card h3 .hint{margin-inline-start:auto;color:var(--dim);font-size:.75rem;font-weight:400}
+.c4{grid-column:span 3}.c8{grid-column:span 8}.c12{grid-column:span 12}.c6{grid-column:span 6}
+@media(max-width:1000px){.c4{grid-column:span 6}.c8{grid-column:span 12}}
+@media(max-width:640px){.c4,.c6{grid-column:span 12}}
+
+.stat{display:flex;flex-direction:column;gap:6px}
+.stat .v{font-size:1.9rem;font-weight:800;letter-spacing:-.5px}
+.stat .k{color:var(--dim);font-size:.8rem}
+.stat .ic{position:absolute;inset-inline-end:14px;top:14px;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:18px;background:rgba(255,255,255,.06)}
+.stat.g .v{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* accounts */
+.acct{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px dashed var(--line)}
+.acct:last-child{border-bottom:none}
+.acct .av{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:18px;flex-shrink:0}
+.av.tg{background:rgba(42,171,238,.15);border:1px solid rgba(42,171,238,.35)}
+.av.bl{background:rgba(0,194,168,.15);border:1px solid rgba(0,194,168,.35)}
+.av.bb{background:rgba(245,184,61,.13);border:1px solid rgba(245,184,61,.35)}
+.acct .t b{font-size:.9rem;display:block}
+.acct .t small{color:var(--dim);font-size:.76rem}
+.acct .st{margin-inline-start:auto;font-size:.72rem;color:var(--ok);white-space:nowrap}
+.acct .st.off{color:var(--dim2)}
+
+/* pairs */
+table{width:100%;border-collapse:collapse}
+th{color:var(--dim);font-size:.75rem;font-weight:600;text-align:right;padding:8px 10px;border-bottom:1px solid var(--line)}
+td{padding:11px 10px;border-bottom:1px solid rgba(255,255,255,.05);font-size:.88rem;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+.pairname b{display:block}
+.pairname small{color:var(--dim);font-size:.74rem}
+.seg{display:inline-flex;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:11px;padding:3px;gap:2px}
+.seg button{border:none;background:transparent;color:var(--dim);font:inherit;font-size:.76rem;padding:6px 10px;border-radius:8px;cursor:pointer;transition:.15s;white-space:nowrap}
+.seg button:hover{color:var(--txt)}
+.seg button.on{background:var(--grad);color:#fff;font-weight:700}
+.idbtn{border:none;background:rgba(255,92,116,.12);color:var(--err);width:30px;height:30px;border-radius:9px;cursor:pointer;font-size:.9rem;transition:.15s}
+.idbtn:hover{background:rgba(255,92,116,.25)}
+.empty{text-align:center;color:var(--dim2);padding:26px 10px;font-size:.9rem}
+.empty .big{font-size:2rem;display:block;margin-bottom:8px;opacity:.6}
+
+/* logs */
+#logbox{background:#070a10;border:1px solid var(--line);border-radius:12px;padding:12px;height:300px;overflow:auto;
+  font-family:"Cascadia Code",Consolas,Menlo,monospace;font-size:.78rem;line-height:1.75;direction:ltr;text-align:left}
+#logbox .ln{white-space:pre-wrap;word-break:break-all;color:#9fb0c8}
+#logbox .ln .t{color:#4d5a70}
+#logbox .ln.err .lv{color:var(--err)} #logbox .ln.warn .lv{color:var(--warn)}
+#logbox .ln .lv{color:#31d185;font-weight:700}
+.logbar{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.logbar label{display:inline-flex;align-items:center;gap:7px;color:var(--dim);font-size:.82rem;cursor:pointer}
+.chk{appearance:none;width:34px;height:19px;border-radius:99px;background:rgba(255,255,255,.12);position:relative;cursor:pointer;transition:.2s}
+.chk::after{content:"";position:absolute;top:2.5px;right:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:.2s}
+.chk:checked{background:rgba(49,209,133,.5)}
+.chk:checked::after{right:calc(100% - 17px)}
+
+/* modal + toast */
+.modal{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;background:rgba(5,8,13,.7);backdrop-filter:blur(8px)}
+.modal.show{display:flex}
+.modal .box{width:min(480px,93vw);background:var(--bg2);border:1px solid var(--line);border-radius:20px;padding:24px;box-shadow:var(--shadow)}
+.modal h3{margin-bottom:16px}
+.modal .row{margin-bottom:13px}
+.modal label{display:block;color:var(--dim);font-size:.8rem;margin-bottom:6px}
+.modal input{width:100%;padding:12px 14px;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:12px;color:var(--txt);font:inherit;outline:none}
+.modal input:focus{border-color:rgba(42,171,238,.55)}
+.dirs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.dirs button{border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--dim);font:inherit;font-size:.82rem;padding:11px 6px;border-radius:12px;cursor:pointer;transition:.15s}
+.dirs button.on{border-color:transparent;background:var(--grad);color:#fff;font-weight:700}
+.modal .actions{display:flex;gap:9px;justify-content:flex-start;margin-top:18px}
+#toasts{position:fixed;top:18px;left:18px;z-index:80;display:flex;flex-direction:column;gap:9px}
+.toast{background:var(--bg2);border:1px solid var(--line);border-inline-start:3px solid var(--ok);border-radius:12px;
+  padding:12px 16px;font-size:.87rem;box-shadow:var(--shadow);animation:tin .3s;max-width:340px}
+.toast.err{border-inline-start-color:var(--err)} .toast.warn{border-inline-start-color:var(--warn)}
+@keyframes tin{from{opacity:0;transform:translateY(-8px)}}
+.report{white-space:pre-wrap;font-family:Consolas,monospace;font-size:.8rem;background:#070a10;border:1px solid var(--line);
+  border-radius:12px;padding:14px;max-height:320px;overflow:auto;direction:rtl;text-align:right;line-height:1.9}
+.pulse{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 rgba(49,209,133,.6);animation:pl 2s infinite}
+@keyframes pl{70%{box-shadow:0 0 0 9px rgba(49,209,133,0)}}
+.muted{color:var(--dim)}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ LOGIN ═══════════ -->
+<div id="login">
+  <div class="login-card" id="loginCard">
+    <div class="brand">
+      <div class="logo">🌉</div>
+      <h1>پل تلگرام ⇄ بله</h1>
+      <p>داشبورد مدیریت</p>
+    </div>
+    <div class="field"><span class="ic">👤</span><input id="lu" placeholder="یوزرنیم" autocomplete="username"></div>
+    <div class="field"><span class="ic">🔑</span><input id="lp" type="password" placeholder="رمز عبور" autocomplete="current-password"></div>
+    <button class="btn" id="lbtn" style="width:100%">ورود به داشبورد</button>
+    <div id="loginErr"></div>
+  </div>
+</div>
+
+<!-- ═══════════ APP ═══════════ -->
+<div id="app">
+  <header class="top">
+    <div class="logo">🌉</div>
+    <div class="titles"><b>پل تلگرام ⇄ بله</b><small id="verTag">داشبورد مدیریت</small></div>
+    <div class="chips" id="chips"></div>
+    <button class="btn ghost small" id="logoutBtn">خروج ⏻</button>
+  </header>
+
+  <div class="toolbar">
+    <div class="switch" id="pauseSwitch" title="توقف/ادامهٔ همگام‌سازی">
+      <div class="knob"></div>
+      <div class="lbl"><span id="pauseTxt">فعال</span><small id="pauseSub">همگام‌سازی روشن است</small></div>
+    </div>
+    <div class="uptime">⏱ <span>فعالیت: <b id="uptime">—</b></span></div>
+    <div class="spacer"></div>
+    <button class="btn ghost small" id="accessBtn">🔓 تست دسترسی‌ها</button>
+    <button class="btn ghost small" id="promoteBtn">🛡 ادمین‌کردن ربات</button>
+    <button class="btn small" id="addBtn">＋ جفت جدید</button>
+  </div>
+
+  <div class="grid">
+    <div class="card c4 stat g"><div class="ic">🔗</div><div class="v" id="stPairs">—</div><div class="k">جفت کانال فعال</div></div>
+    <div class="card c4 stat"><div class="ic">🔄</div><div class="v" id="stMapped">—</div><div class="k">پیام همگام‌شده</div></div>
+    <div class="card c4 stat"><div class="ic">⚡</div><div class="v" id="stMode">—</div><div class="k">حالت بله</div></div>
+
+    <div class="card c6">
+      <h3>👥 حساب‌ها <span class="hint" id="accHint"></span></h3>
+      <div id="accounts"></div>
+    </div>
+
+    <div class="card c6">
+      <h3>🛠 حساب کاربری داشبورد</h3>
+      <div class="muted" style="font-size:.85rem;margin-bottom:12px">یوزرنیم: <b id="dashUser" style="color:var(--txt)"></b></div>
+      <div class="field" style="margin-bottom:10px"><span class="ic">🔑</span><input id="np1" type="password" placeholder="رمز جدید (حداقل ۶ کاراکتر)"></div>
+      <div class="field" style="margin-bottom:12px"><span class="ic">🔑</span><input id="np2" type="password" placeholder="تکرار رمز جدید"></div>
+      <button class="btn ghost small" id="pwBtn">تغییر رمز</button>
+    </div>
+
+    <div class="card c12">
+      <h3>🔗 جفت‌های کانال <span class="hint">جهت را با دکمه‌ها عوض کنید — بلافاصله اعمال می‌شود</span></h3>
+      <table>
+        <thead><tr><th style="width:34%">کانال تلگرام</th><th style="width:34%">کانال بله</th><th>جهت</th><th style="width:44px"></th></tr></thead>
+        <tbody id="pairsBody"></tbody>
+      </table>
+      <div class="empty" id="pairsEmpty"><span class="big">🧩</span>هنوز جفتی نیست — «＋ جفت جدید» را بزنید</div>
+    </div>
+
+    <div class="card c12">
+      <div class="logbar">
+        <h3 style="margin:0">📜 لاگ زنده</h3>
+        <span class="pulse" title="زنده"></span>
+        <div class="spacer" style="flex:1"></div>
+        <label><input type="checkbox" class="chk" id="autoLogs" checked> خودکار</label>
+        <label><input type="checkbox" class="chk" id="autoScroll" checked> دنبال‌کردن</label>
+        <button class="btn ghost small" id="refreshLogs">↻</button>
+      </div>
+      <div id="logbox"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MODAL: add pair ═══════════ -->
+<div class="modal" id="pairModal">
+  <div class="box">
+    <h3>＋ جفت‌کردن دو کانال</h3>
+    <div class="row"><label>کانال تلگرام — @آیدی، لینک یا شناسه عددی</label>
+      <input id="mTg" placeholder="@my_channel یا -1001234567890"></div>
+    <div class="row"><label>کانال بله — @آیدی یا شناسه عددی</label>
+      <input id="mBale" placeholder="@my_bale یا 987654321"></div>
+    <div class="row"><label>جهت همگام‌سازی</label>
+      <div class="dirs" id="mDirs">
+        <button data-m="both" class="on">↔ دوطرفه</button>
+        <button data-m="tg2bale">تلگرام ← بله ▸</button>
+        <button data-m="bale2tg">◂ بله ← تلگرام</button>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="mSave">ثبت جفت</button>
+      <button class="btn ghost" id="mCancel">انصراف</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MODAL: generic report ═══════════ -->
+<div class="modal" id="repModal">
+  <div class="box">
+    <h3 id="repTitle">گزارش</h3>
+    <div class="report" id="repBody"></div>
+    <div class="actions"><button class="btn ghost" id="repClose">بستن</button></div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s);
+const api=async(path,opt={})=>{
+  const r=await fetch(path,{headers:{"Content-Type":"application/json","X-Requested-With":"XMLHttpRequest"},credentials:"same-origin",...opt});
+  let j=null; try{j=await r.json()}catch(e){}
+  if(r.status===401){showLogin();throw new Error("unauthorized")}
+  if(!r.ok||!(j&&j.ok))throw new Error((j&&j.error)||("HTTP "+r.status));
+  return j;
+};
+const post=(p,b)=>api(p,{method:"POST",body:JSON.stringify(b||{})});
+const toast=(msg,kind="")=>{const d=document.createElement("div");d.className="toast "+kind;d.textContent=msg;
+  $("#toasts").appendChild(d);setTimeout(()=>{d.style.opacity="0";d.style.transition=".4s";setTimeout(()=>d.remove(),400)},4200);};
+const fmtUp=s=>{const d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);
+  return (d?d+" روز + ":"")+String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(Math.floor(s%60)).padStart(2,"0");};
+const esc=t=>{const d=document.createElement("div");d.textContent=t??"";return d.innerHTML};
+const MODE_LBL={both:"↔ دوطرفه",tg2bale:"تلگرام→بله",bale2tg:"بله→تلگرام"};
+
+/* ───────── login flow ───────── */
+function showLogin(){$("#login").classList.remove("hide");$("#app").classList.remove("show")}
+function showApp(){$("#login").classList.add("hide");$("#app").classList.add("show")}
+async function doLogin(){
+  const b=$("#lbtn");b.disabled=true;$("#loginErr").textContent="";
+  try{
+    await post("/api/login",{username:$("#lu").value.trim(),password:$("#lp").value});
+    showApp();await refreshAll();startPolling();
+  }catch(e){$("#loginErr").textContent=e.message==="unauthorized"?"":e.message;
+    $("#loginCard").classList.remove("shake");void $("#loginCard").offsetWidth;$("#loginCard").classList.add("shake");}
+  finally{b.disabled=false}
+}
+$("#lbtn").onclick=doLogin;
+$("#lp").addEventListener("keydown",e=>{if(e.key==="Enter")doLogin()});
+$("#logoutBtn").onclick=async()=>{try{await post("/api/logout")}catch(e){}showLogin()};
+
+/* ───────── status ───────── */
+let st=null;
+async function refreshStatus(){
+  try{
+    st=await api("/api/status");
+    $("#verTag").textContent="داشبورد مدیریت · v"+st.version;
+    $("#stPairs").textContent=st.pairs; $("#stMapped").textContent=st.mapped.toLocaleString("fa-IR");
+    $("#stMode").textContent=st.bale_mode==="user"?"سلف‌بات":"ربات";
+    $("#uptime").textContent=fmtUp(st.uptime_s);
+    $("#dashUser").textContent=st.dash_user;
+    const sw=$("#pauseSwitch");
+    sw.classList.toggle("on",!st.paused);
+    $("#pauseTxt").textContent=st.paused?"متوقف":"فعال";
+    $("#pauseSub").textContent=st.paused?"همگام‌سازی خاموش است":"همگام‌سازی روشن است";
+    renderChips();renderAccounts();
+  }catch(e){if(e.message!=="unauthorized")toast(e.message,"err")}
+}
+function renderChips(){
+  const a=st.accounts||{};const c=[];
+  const tg=a.tg_self&&a.tg_self.id?a.tg_self:null;
+  c.push(chip("✈️",tg?(tg.username?"@"+tg.username:tg.first_name||"تلگرام"):"تلگرام — نامشخص",!!tg));
+  const bl=a.bale&&a.bale.id?a.bale:null;
+  c.push(chip("🟡",bl?(bl.username?"@"+bl.username:bl.first_name||"بله"):"بله — نامشخص",!!bl));
+  const bb=a.bale_bot&&a.bale_bot.id?a.bale_bot:null;
+  c.push(chip("🤖",bb?(bb.username?"@"+bb.username:"بات کنترل"):"بات کنترل خاموش",!!bb));
+  $("#chips").innerHTML=c.join("");
+}
+const chip=(ic,label,on)=>`<span class="chip ${on?"":"gray"}"><span class="dot"></span>${ic} <b>${esc(label)}</b></span>`;
+function renderAccounts(){
+  const a=st.accounts||{};const rows=[];
+  const tg=a.tg_self||{};
+  rows.push(acct("tg","✈️","سلف تلگرام",tg.username?"@"+tg.username:(tg.first_name||"—"),tg.id?"متصل":"خاموش",!tg.id));
+  const bl=a.bale||{};
+  rows.push(acct("bl","🟡",st.bale_mode==="user"?"حساب بله (سلف‌بات)":"ربات بله",
+    bl.username?"@"+bl.username:(bl.first_name||"—"),bl.id?"متصل":"خاموش",!bl.id));
+  const bb=a.bale_bot||{};
+  rows.push(acct("bb","🤖","بات کنترل تلگرام",bb.username?"@"+bb.username:"—",bb.id?"فعال":"غیرفعال",!bb.id));
+  $("#accounts").innerHTML=rows.join("");
+  $("#accHint").textContent=st.mode==="bridge"?"":"⚠️ نصب ناقص — ویزارد را در بات کامل کنید";
+}
+const acct=(cls,ic,name,val,stTxt,off)=>`<div class="acct"><div class="av ${cls}">${ic}</div>
+  <div class="t"><b>${esc(name)}</b><small>${esc(val)}</small></div>
+  <div class="st ${off?"off":""}">${off?"○":"●"} ${stTxt}</div></div>`;
+
+/* ───────── pairs ───────── */
+async function refreshPairs(){
+  try{
+    const j=await api("/api/pairs");
+    const tb=$("#pairsBody");tb.innerHTML="";
+    $("#pairsEmpty").style.display=j.pairs.length?"none":"block";
+    for(const p of j.pairs){
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
+        <td class="pairname"><b>${esc(p.tg_label||"—")}</b><small>${esc(p.tg_username?"@"+p.tg_username:p.tg_chat_id)}</small></td>
+        <td class="pairname"><b>${esc(p.bale_label||"—")}</b><small>${esc(p.bale_username?"@"+p.bale_username:p.bale_chat_id)}</small></td>
+        <td><div class="seg" data-id="${p.id}">
+          ${["both","tg2bale","bale2tg"].map(m=>`<button data-m="${m}" class="${p.mode===m?"on":""}">${MODE_LBL[m]}</button>`).join("")}
+        </div></td>
+        <td><button class="idbtn" title="حذف جفت">🗑</button></td>`;
+      tr.querySelectorAll(".seg button").forEach(b=>b.onclick=async()=>{
+        try{await api("/api/pairs/"+p.id,{method:"PATCH",body:JSON.stringify({mode:b.dataset.m})});
+          toast("جهت جفت #"+p.id+" → "+MODE_LBL[b.dataset.m]);refreshPairs();}
+        catch(e){toast(e.message,"err")}
+      });
+      tr.querySelector(".idbtn").onclick=async()=>{
+        if(!confirm("جفت #"+p.id+" حذف شود؟ (نگاشت پیام‌ها هم پاک می‌شود)"))return;
+        try{await api("/api/pairs/"+p.id,{method:"DELETE"});toast("جفت #"+p.id+" حذف شد","warn");refreshPairs();}
+        catch(e){toast(e.message,"err")}
+      };
+      tb.appendChild(tr);
+    }
+  }catch(e){if(e.message!=="unauthorized")toast(e.message,"err")}
+}
+
+/* ───────── add-pair modal ───────── */
+let mMode="both";
+$("#addBtn").onclick=()=>{$("#pairModal").classList.add("show");$("#mTg").focus()};
+$("#mCancel").onclick=()=>$("#pairModal").classList.remove("show");
+$("#mDirs").querySelectorAll("button").forEach(b=>b.onclick=()=>{
+  $("#mDirs").querySelectorAll("button").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on");mMode=b.dataset.m;
+});
+$("#mSave").onclick=async()=>{
+  const b=$("#mSave");b.disabled=true;
+  try{
+    const j=await post("/api/pairs",{tg:$("#mTg").value.trim(),bale:$("#mBale").value.trim(),mode:mMode});
+    $("#pairModal").classList.remove("show");$("#mTg").value="";$("#mBale").value="";
+    toast("✅ جفت #"+j.pair_id+" ثبت شد");
+    refreshPairs();
+  }catch(e){toast(e.message,"err")}
+  finally{b.disabled=false}
+};
+
+/* ───────── pause switch ───────── */
+$("#pauseSwitch").onclick=async()=>{
+  if(!st||st.mode!=="bridge"){toast("پل هنوز کامل نصب نشده","warn");return}
+  try{await post(st.paused?"/api/resume":"/api/pause");refreshStatus();
+    toast(st.paused?"▶️ همگام‌سازی ادامه یافت":"⏸ همگام‌سازی متوقف شد");}
+  catch(e){toast(e.message,"err")}
+};
+
+/* ───────── password change ───────── */
+$("#pwBtn").onclick=async()=>{
+  const a=$("#np1").value,b=$("#np2").value;
+  if(a.length<6){toast("رمز حداقل ۶ کاراکتر","warn");return}
+  if(a!==b){toast("تکرار رمز مطابقت ندارد","err");return}
+  try{await post("/api/passwd",{new:a});$("#np1").value="";$("#np2").value="";toast("✅ رمز داشبورد عوض شد")}
+  catch(e){toast(e.message,"err")}
+};
+
+/* ───────── access / promote ───────── */
+const showReport=(title,rep)=>{$("#repTitle").textContent=title;$("#repBody").textContent=rep;$("#repModal").classList.add("show")};
+$("#repClose").onclick=()=>$("#repModal").classList.remove("show");
+$("#accessBtn").onclick=async()=>{
+  try{toast("⏳ در حال تست واقعی دسترسی‌ها…");
+    const j=await post("/api/access");showReport("🔓 گزارش دسترسی",j.report);}
+  catch(e){toast(e.message,"err")}
+};
+$("#promoteBtn").onclick=async()=>{
+  if(!confirm("سلف بله، ربات بله را به کانال‌ها اضافه و ادمین می‌کند. ادامه؟"))return;
+  try{toast("⏳ در حال ادمین‌کردن ربات…");
+    const j=await post("/api/promote");showReport("🛡 ادمین‌کردن ربات",j.report);}
+  catch(e){toast(e.message,"err")}
+};
+
+/* ───────── logs ───────── */
+let lastLogs="";
+function renderLogs(lines){
+  const box=$("#logbox");
+  const joined=lines.join("\u0001");
+  if(joined===lastLogs)return; lastLogs=joined;
+  box.innerHTML=lines.map(l=>{
+    const m=l.match(/^(\S+\s\S+)\s+(\w+)\s+(.*)$/);
+    if(!m)return `<div class="ln">${esc(l)}</div>`;
+    const cls=/ERROR/i.test(m[2])?"err":/WARNING/i.test(m[2])?"warn":"";
+    return `<div class="ln ${cls}"><span class="t">${esc(m[1])}</span> <span class="lv">${esc(m[2])}</span> ${esc(m[3])}</div>`;
+  }).join("");
+  if($("#autoScroll").checked)box.scrollTop=box.scrollHeight;
+}
+async function refreshLogs(){
+  try{const j=await api("/api/logs?n=120");renderLogs(j.lines||[])}
+  catch(e){}
+}
+$("#refreshLogs").onclick=refreshLogs;
+
+/* ───────── polling ───────── */
+let pollT1=null,pollT2=null;
+function startPolling(){
+  clearInterval(pollT1);clearInterval(pollT2);
+  pollT1=setInterval(refreshStatus,5000);
+  pollLoopLogs();
+}
+async function pollLoopLogs(){
+  if($("#autoLogs").checked)await refreshLogs();
+  setTimeout(pollLoopLogs,3000);
+}
+
+/* ───────── boot ───────── */
+async function refreshAll(){await Promise.all([refreshStatus(),refreshPairs(),refreshLogs()])}
+(async()=>{
+  try{await api("/api/status");showApp();await refreshAll();startPolling()}
+  catch(e){showLogin()}
+})();
+</script>
+</body>
+</html>

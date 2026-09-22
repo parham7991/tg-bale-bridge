@@ -18,6 +18,7 @@ import config as cfg
 from bridge import logbuf
 from bridge.admin import Admin
 from bridge.bot_api import BotAPI, BotAPIError
+from bridge.dashboard import Dashboard
 from bridge.db import DB
 from bridge.store import Store
 from bridge.tg_bot import TgAdminBot
@@ -61,6 +62,8 @@ async def _run_installer(db: DB, store: Store):
         log.error("TG_BOT_TOKEN در .env لازم است — فقط همین یکی!")
         sys.exit(1)
     log.warning("نصب ناقص است — حالت نصاب: در بات تلگرام /start بزنید و ویزارد را کامل کنید")
+    log_handler = logbuf.install()
+    started_at = time.time()
     api = BotAPI(cfg.TG_BOT_TOKEN, cfg.TG_BOT_API_BASE)
     try:
         api.me = await api.get_me()
@@ -69,9 +72,14 @@ async def _run_installer(db: DB, store: Store):
         sys.exit(1)
     wizard = Wizard(api, db, cfg, store)
     bot = TgAdminBot(api, None, db, cfg, wizard=wizard, store=store)
+    dash = Dashboard(db, store, cfg, {"log_buffer": log_handler, "started_at": started_at})
+    if cfg.DASH_ENABLED:
+        await dash.start()
     try:
         await bot.start()
     finally:
+        if cfg.DASH_ENABLED:
+            await dash.stop()
         await api.close()
 
 
@@ -132,6 +140,15 @@ async def main():
     admin = Admin(db, bale, tg, bridge, cfg,
                   log_buffer=log_handler, started_at=started_at)
     register_tg(tg, bridge, admin, me.id)
+
+    dash = Dashboard(db, store, cfg, {
+        "admin": admin, "bridge": bridge, "tg": tg, "bale": bale,
+        "tg_me": {"id": me.id, "username": me.username, "first_name": me.first_name},
+        "bale_me": bale_me,
+        "log_buffer": log_handler, "started_at": started_at,
+    })
+    if cfg.DASH_ENABLED:
+        await dash.start()
 
     if not cfg.ADMIN_TG_ID:
         log.warning("ادمین تلگرام تعیین نشده — اولین /start در بات مدیریت ادمین می‌شود")
@@ -235,6 +252,8 @@ async def main():
     try:
         await asyncio.gather(*tasks)
     finally:
+        if cfg.DASH_ENABLED:
+            await dash.stop()
         if tg_bot_api:
             await tg_bot_api.close()
         if bale_bot_api:

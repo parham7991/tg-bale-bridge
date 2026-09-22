@@ -4,6 +4,8 @@ services:
     container_name: tg-bale-bridge
     restart: unless-stopped
     env_file: .env
+    ports:
+      - "8080:8080"   # داشبورد وب (DASH_PORT)
     volumes:
       - ./data:/app/data
     # برای ساخت سشن تلگرام، ابتدا `python login.py` را بیرون از داکر اجرا کنید

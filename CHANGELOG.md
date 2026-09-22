@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-09-22
+
+### Added — 🌐 the web dashboard
+- **Full web dashboard** (`bridge/dashboard.py` + `bridge/dash.html`) served by aiohttp
+  on the same event loop — zero new dependencies
+  - live status cards (pairs, mapped messages, Bale mode, uptime, pause state)
+  - pairs table: switch direction inline, delete, add via modal (real resolution of
+    @usernames/ids through the admin resolvers)
+  - global pause/resume toggle (persisted), **live color-coded log terminal**
+  - 🔓 real access probes and 🛡 bot promotion — same engines as the bot commands
+  - dashboard-credentials management (change password from the browser)
+- **Auth**: PBKDF2-HMAC-SHA256 (100k iters) · HttpOnly SameSite=Strict session cookie ·
+  CSRF header guard · 60s lockout after 5 failed logins
+- **Bot integration**: `/dashboard` (creates + shows one-time initial password),
+  `/passwd <new>`, `/dashuser <name>`, wizard button 🌐 داشبورد
+- Config: `DASH_ENABLED` / `DASH_HOST` / `DASH_PORT` (default 0.0.0.0:8080);
+  docker-compose exposes the port
+- Runs in **both** boot modes (installer + full bridge)
+- 15 new tests (auth, CSRF, rate-limit, pairs CRUD, control, logs, password rotation,
+  access/promote guards) — **141 total**, ruff clean
+
+[2.2.0]: https://github.com/parham7991/tg-bale-bridge/compare/v2.1.0...v2.2.0
+
 ## [2.1.0] - 2026-09-22
 
 ### Added — 🛡 the selfbot can now promote the Bale bot itself
