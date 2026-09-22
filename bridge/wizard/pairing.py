@@ -12,6 +12,42 @@ from .types_map import DIR_KB, forward_chat_info
 
 logger = logging.getLogger("bridge.wizard.pairing")
 
+_URL_HOSTS = ("ble.ir", "bale.ai", "www.bale.ai", "web.bale.ai", "t.me",
+              "telegram.me", "wizwit.ir")
+
+
+def normalize_bale_ref(text: str) -> str:
+    """ورودی آزاد کاربر را به مرجع تمیز تبدیل می‌کند: لینک/آیدی/عدد.
+
+    • https://ble.ir/username  → @username
+    • https://bale.ai/@username یا web.bale.ai/... → @username
+    • t.me/username → @username (همان شناسه اگر کانال بله هم‌نام باشد)
+    • @username / username / 12345 / -12345 → دست‌نخورده (تمیزشده)
+    لینک‌های خصوصی (joinchat/+hash) قابل resolve نیستند — همان رشته برمی‌گردد
+    تا پیام خطای راهنما دیده شود.
+    """
+    s = (text or "").strip()
+    if not s:
+        return s
+    lowered = s.lower()
+    if "://" in lowered or lowered.startswith(("ble.ir/", "bale.ai/", "t.me/")):
+        from urllib.parse import urlparse
+        raw = s if "://" in s else "https://" + s
+        try:
+            host = (urlparse(raw).netloc or "").lower()
+            path = (urlparse(raw).path or "").strip("/")
+        except ValueError:
+            return s
+        if any(host == h or host.endswith("." + h) for h in _URL_HOSTS) and path:
+            last = path.split("/")[-1].strip()
+            if last.startswith("+") or path.split("/")[0] in ("joinchat", "join",
+                                                              "invite"):
+                return s                      # لینک خصوصی — resolve‌شدنی نیست
+            if last:
+                return "@" + last.lstrip("@")
+        return s
+    return s
+
 
 class PairingEngine:
     """جریان جفت‌کردن — همهٔ I/O از طریق نما (پچ‌پذیر در تست‌ها)."""
@@ -64,7 +100,7 @@ class PairingEngine:
     # ───────────────────────────── مرحله ۲ ─────────────────────────────
     async def bale_resolve(self, chat_id, text, msg) -> None:
         st = self.wiz._state(chat_id)
-        ref = text.strip()
+        ref = normalize_bale_ref(text)
         bale_api = await self.wiz._bale_api_for_setup()
         if bale_api is None:
             await self.wiz._send(chat_id, "ابتدا سلف بله یا ربات بله را نصب کنید (دکمه‌های 🟡/🤖).")
@@ -73,7 +109,10 @@ class PairingEngine:
             info = await bale_api.get_chat(ref)
         except Exception as e:
             await self.wiz._send(
-            chat_id, f"❌ کانال بله پیدا نشد: {str(e)[:120]}\n@آیدی درست بدهید:")
+            chat_id, f"❌ کانال بله پیدا نشد: {str(e)[:120]}\n"
+                "فرمت‌های درست: @آیدی (مثل @marvellit) یا لینک عمومی "
+                "(مثل https://ble.ir/marvellit) یا شناسهٔ عددی. لینک خصوصی (joinchat) "
+                "قابل resolve نیست — @آیدی عمومی کانال را بفرستید.")
             return
         st["data"]["bale"] = info
         st["state"] = "pair_dir"

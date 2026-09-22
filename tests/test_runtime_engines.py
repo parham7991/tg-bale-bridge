@@ -170,7 +170,7 @@ def test_run_all_closes_everything_on_error():
 # ───────────────────────────── سازگاری ─────────────────────────────
 
 def test_package_surface_and_version():
-    assert VERSION == "2.15.0"
+    assert VERSION == "2.17.2"
     assert hasattr(OverridesEngine, "apply")
 
 

@@ -70,12 +70,16 @@ def unwrap(value: Any) -> Any:
 
 
 def extract_id(obj: Any) -> int:
-    """استخراج شناسهٔ عددی از آبجکت‌های تودرتو (User/Contact/Peer/dict)."""
+    """استخراج شناسهٔ عددی از آبجکت‌های تودرتو (User/Contact/Peer/dict).
+
+    نکته: پاسخ search_username در aiobale برای «کاربر/بات» در فیلد ``user``
+    و برای «گروه/کانال» در فیلد ``group`` است — هر دو باید پوشش داده شوند.
+    """
     for attr in ("id", "user_id", "chat_id"):
         v = getattr(obj, attr, None)
         if isinstance(v, int):
             return v
-    for attr in ("user", "contact", "peer", "data"):
+    for attr in ("user", "group", "contact", "peer", "data"):
         inner = getattr(obj, attr, None)
         if inner is not None and inner is not obj:
             found = extract_id(inner)
@@ -86,7 +90,7 @@ def extract_id(obj: Any) -> int:
             v = obj.get(key)
             if isinstance(v, int):
                 return v
-        for key in ("user", "contact", "peer"):
+        for key in ("user", "group", "contact", "peer"):
             if isinstance(obj.get(key), dict):
                 found = extract_id(obj[key])
                 if found:

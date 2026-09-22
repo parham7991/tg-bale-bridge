@@ -199,7 +199,7 @@ def test_dashinfo_shows_address_and_one_time_password(monkeypatch):
 # ───────────────────────────── سازگاری ─────────────────────────────
 
 def test_package_version_and_dir_kb():
-    assert VERSION == "2.9.0"
+    assert VERSION == "2.17.2"
     assert "dir:both" in str(DIR_KB)
 
 
@@ -213,3 +213,20 @@ def test_facade_has_full_legacy_surface():
                  "_bale_user_api", "_bale_api_for_setup", "_check_bale_bot",
                  "_finish", "_do_restart"):
         assert hasattr(Wizard, name), name
+
+# ─────────────── رگرسیون v2.17.2: نرمال‌سازی ورودی کانال بله ───────────────
+
+def test_normalize_bale_ref_formats():
+    from bridge.wizard.pairing import normalize_bale_ref as n
+    assert n("  @marvellit ") == "@marvellit"
+    assert n("marvellit") == "marvellit"
+    assert n("-1001234") == "-1001234"
+    assert n("https://ble.ir/marvellit") == "@marvellit"
+    assert n("https://ble.ir/marvellit/") == "@marvellit"
+    assert n("bale.ai/@marvellit") == "@marvellit"
+    assert n("https://web.bale.ai/x/@marvellit") == "@marvellit"   # سگمنت آخر
+    assert n("t.me/marvellit") == "@marvellit"
+    # لینک خصوصی دست‌نخورده می‌ماند (خطای راهنما می‌گیرد)
+    assert n("https://ble.ir/joinchat/AbCdEf") == "https://ble.ir/joinchat/AbCdEf"
+    assert n("https://ble.ir/+AbCd") == "https://ble.ir/+AbCd"
+    assert n("") == ""

@@ -271,3 +271,22 @@ def test_on_bale_delete_queues_and_filters_echo(tmp_path):
     run(br.on_bale_delete(123, [5, 6]))
     kind, payload = br.q_bale.get_nowait()
     assert payload == ("123", [6])
+
+
+# ─────────────── رگرسیون v2.17.2: resolve کانال از search_username ───────────────
+
+def test_extract_id_reads_group_field():
+    """پاسخ search_username برای «گروه/کانال» در فیلد group است نه user."""
+    from types import SimpleNamespace as NS
+
+    from bridge.bale.types_map import extract_id
+
+    # شکل aiobale: ContactResponse(group=Peer(id=...))
+    resp = NS(user=None, group=NS(id=-1001234567890, username="marvellit"))
+    assert extract_id(resp) == -1001234567890
+    # شکل dict
+    assert extract_id({"group": {"id": 42, "username": "x"}}) == 42
+    # کاربر (فیلد user) مثل قبل
+    assert extract_id(NS(user=NS(id=77), group=None)) == 77
+    # مستقیم روی خود Peer
+    assert extract_id(NS(id=5)) == 5

@@ -42,8 +42,10 @@ class ControlBotsEngine:
 
         # ---------- ربات بله به‌عنوان سطح ادمین در حالت سلف‌بات (ترکیبی، اختیاری) ----------
         bale_bot_api = None
-        if self.cfg.BALE_MODE == "user" and self.cfg.BALE_TOKEN:
-            bale_bot_api = BotAPI(self.cfg.BALE_TOKEN, self.cfg.BALE_API_BASE)
+        token = self.cfg.BALE_TOKEN or (self.store.bale_bot() or {}).get("token", "")
+        want_panel = self.cfg.BALE_MODE == "user" or bool(self.store.bale_self())
+        if want_panel and token:
+            bale_bot_api = BotAPI(token, self.cfg.BALE_API_BASE)
             try:
                 bale_bot_api.me = await bale_bot_api.get_me()
             except BotAPIError as e:

@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.17.2] - 2026-09-22
+
+### Fixed — live-server bug: Bale **channel** usernames never resolved
+- **`extract_id` now reads the `group` field**: aiobale's `search_username`
+  returns users/bots in the `user` field but **groups/channels in the
+  `group` field** — the extractor only walked `user/contact/peer/data`, so
+  every Bale *channel* `@username` failed with "chat not found" while
+  user-type usernames worked (found during live wizard testing: `@marvellit`).
+- **Wizard Bale step input normalization** (`normalize_bale_ref`): full
+  links (`https://ble.ir/name`, `bale.ai/@name`, `web.bale.ai/...`,
+  `t.me/name`) now resolve to `@name`; `@name` / bare name / numeric ids
+  pass through; private `joinchat`/`+hash` links return a helpful error
+  instead of a raw failure.
+- **Combined Bale-bot panel in full mode**: the control-bot panel now also
+  starts when the Bale bot token comes from the **store** (wizard-installed),
+  not only from `BALE_TOKEN` env — management from inside Bale works out of
+  the box after wizard setup.
+
+### Tests
+- regression: `extract_id` on ContactResponse shapes (attr + dict, group +
+  user), `normalize_bale_ref` across all link formats → **341 green**
+
 ## [2.17.1] - 2026-09-22
 
 ### Fixed — Python 3.10 compatibility (found in live-server testing)
