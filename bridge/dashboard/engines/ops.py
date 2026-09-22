@@ -5,8 +5,9 @@
 """
 from __future__ import annotations
 
+from ...bale import BaleBotGateway
 from ...bot_api import BotAPI
-from ...wizard import probe_bale_access, probe_tg_access
+from ...wizard import probe_tg_access
 from ..context import RuntimeCtx
 from .base import DashboardError
 
@@ -36,7 +37,7 @@ class OpsEngine:
                 lines.append("  ▫️ سلف تلگرام: — در دسترس نیست")
             if bale is not None:
                 try:
-                    _, note = await probe_bale_access(bale, p["bale_chat_id"])
+                    _, note = await BaleBotGateway.probe(bale, p["bale_chat_id"])
                 except Exception as e:
                     note = f"✘ {str(e)[:60]}"
                 lines.append(f"  ▫️ سمت بله → {p['bale_label'] or p['bale_chat_id']}: {note}")
@@ -46,7 +47,7 @@ class OpsEngine:
 
     # ------------------------------------------------------------ ادمین‌کردن ربات
     async def promote_bot(self) -> str:
-        from ...bale_user import BaleUserAPI
+        from ...bale import BaleUserAPI
 
         bale = self.ctx.bale
         if not isinstance(bale, BaleUserAPI):
@@ -66,7 +67,7 @@ class OpsEngine:
                     await bale.add_admin(p["bale_chat_id"], bot_ref)
                     note = "✔ اضافه و ادمین شد"
                     try:
-                        ok, pnote = await probe_bale_access(bot_api, p["bale_chat_id"])
+                        ok, pnote = await BaleBotGateway.probe(bot_api, p["bale_chat_id"])
                         note += " — تست ارسال: " + ("✔" if ok else f"✘ {pnote}")
                     except Exception as e:
                         note += f" — تست: ✘ {str(e)[:60]}"

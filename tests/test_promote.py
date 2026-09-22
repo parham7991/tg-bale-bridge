@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from bridge.bale_user import BaleUserAPI
+from bridge.bale import BaleUserAPI
 from bridge.bot_api import BotAPIError
 from bridge.db import DB
 from bridge.store import Store

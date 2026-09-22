@@ -17,6 +17,7 @@ from telethon import TelegramClient
 import config as cfg
 from bridge import logbuf
 from bridge.admin import Admin
+from bridge.bale import BaleEventRouter
 from bridge.bot_api import BotAPI, BotAPIError
 from bridge.dashboard import Dashboard
 from bridge.db import DB
@@ -104,7 +105,7 @@ async def main():
 
     # ---------- سمت بله: سلف (aiobale) یا ربات (BotAPI) ----------
     if cfg.BALE_MODE == "user" or store.bale_self():
-        from bridge.bale_user import BaleUserAPI
+        from bridge.bale import BaleUserAPI
 
         bale = BaleUserAPI(
             session_file=cfg.BALE_SESSION, phone_number=cfg.BALE_PHONE or None, db=db)
@@ -185,53 +186,7 @@ async def main():
         if bale_bot_api:
             log.info("حالت ترکیبی: ربات بله هم فعال — پنل ادمین در چت خصوصی ربات هم جواب می‌دهد")
 
-    async def on_bale_bot_update(upd, offset):
-        db.set_meta("bale_bot_offset", str(offset))
-        m = upd.get("message")
-        if not m:
-            return
-        chat = m.get("chat") or {}
-        if chat.get("type") != "private":
-            return  # کانال‌ها فقط از سشن کاربر می‌آیند (جلوگیری از دوباره‌کاری)
-        uid = (m.get("from") or {}).get("id")
-        text = m.get("text") or ""
-        is_forward = bool(m.get("forward_from_chat") or m.get("forward_from"))
-        if not (text.strip() or is_forward):
-            return
-        reply = await admin.handle("bale", chat.get("id"), uid, text, m)
-        if reply:
-            await bale_bot_api.send_message(chat.get("id"), reply)
-
-    async def on_bale_update(upd, offset):
-        db.set_meta("bale_offset", str(offset))
-        dm = upd.get("deleted_messages")
-        if dm is not None:
-            # فقط سلف‌بات بله (aiobale) رویداد حذف می‌دهد → حذف بله→تلگرام
-            await bridge.on_bale_delete(
-                (dm.get("chat") or {}).get("id"), dm.get("message_ids") or [])
-            return
-        m = upd.get("message") or upd.get("channel_post")
-        em = upd.get("edited_message") or upd.get("edited_channel_post")
-        if em:
-            await bridge.queue_bale_edit(em)
-            return
-        if not m:
-            return
-        chat = m.get("chat") or {}
-        if chat.get("type") == "private":
-            uid = (m.get("from") or {}).get("id")
-            if cfg.BALE_MODE == "user":
-                # سلف‌بات = حساب انسانی؛ هرگز به ناشناس‌ها پاسخ خودکار نده
-                if not cfg.ADMIN_BALE_ID or int(uid or 0) != int(cfg.ADMIN_BALE_ID):
-                    return
-            text = m.get("text") or ""
-            is_forward = bool(m.get("forward_from_chat") or m.get("forward_from"))
-            if text.strip() or is_forward:
-                reply = await admin.handle("bale", chat.get("id"), uid, text, m)
-                if reply:
-                    await bale.send_message(chat.get("id"), reply)
-            return
-        await bridge.queue_bale_msg(m)
+    router = BaleEventRouter(db, cfg, bridge=bridge, admin=admin, bale=bale)
 
     offset_raw = db.get_meta("bale_offset")
     offset = int(offset_raw) if offset_raw else None
@@ -239,7 +194,7 @@ async def main():
     log.info("آماده دریافت پیام‌ها 🚀")
     tasks = [
         tg.run_until_disconnected(),
-        bale.listen(on_bale_update, offset=offset, timeout=cfg.BALE_POLL_TIMEOUT),
+        bale.listen(router.handle_update, offset=offset, timeout=cfg.BALE_POLL_TIMEOUT),
         *bridge.workers(),
     ]
     if tg_bot_task:
@@ -248,7 +203,8 @@ async def main():
         bot_offset_raw = db.get_meta("bale_bot_offset")
         bot_offset = int(bot_offset_raw) if bot_offset_raw else None
         tasks.append(bale_bot_api.listen(
-            on_bale_bot_update, offset=bot_offset, timeout=cfg.BALE_POLL_TIMEOUT))
+            router.panel_handler(bale_bot_api), offset=bot_offset,
+            timeout=cfg.BALE_POLL_TIMEOUT))
     try:
         await asyncio.gather(*tasks)
     finally:

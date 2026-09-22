@@ -76,7 +76,13 @@
 | `bridge/admin.py` | 🎛 موتور پنل | دستورات مدیریتی روی همهٔ سطوح |
 | `bridge/wizard.py` | 🧙‍♂️ موتور نصب | ویزارد داخل بات + پروب‌های واقعی |
 | `bridge/tg_user.py` / `tg_bot.py` | ✈️ سطح‌های تلگرام | سلف (Telethon) و بات کنترل |
-| `bridge/bale_user.py` / `bot_api.py` | 🟡 سطح‌های بله | سلف (aiobale) و BotAPI عمومی |
+| **`bridge/bale/`** | 🟡 بستهٔ بله (سلف) | ↓ تفکیک کامل ↓ |
+| `bale/session.py` + `events.py` | 🎧 نشست و رویدادها | کلاینت aiobale، کش‌ها، listen، رویداد حذف |
+| `bale/sender.py` / `editor.py` / `files.py` | 📤 ارسال/ویرایش/فایل | همهٔ send_* با فالبک کامل، ویرایش/حذف، دانلود |
+| `bale/resolver.py` / `normalize.py` / `types_map.py` | 🔧 تبدیل و شناسایی | شناسه/نوع چت، نرمال‌سازی ⇄ Bot-API |
+| `bale/admin_ops.py` / `profile.py` | 👑 ادمین و پروفایل | ادمین‌کردن ربات توسط سلف، get_me/get_chat |
+| `bale/gateway.py` / `routing.py` / `facade.py` | 🚪 دروازه و مسیریابی | resolve + پروب، روتر رویدادها، نمأی سازگاری |
+| `bridge/bot_api.py` | 🟡 BotAPI عمومی بله | حالت ربات و همهٔ توکن‌ها |
 | `bridge/db.py` / `store.py` | 💾 موتور داده | نگاشت‌ها + تنظیمات زمان اجرا |
 | `bridge/formatter.py` | 🎨 موتور قالب | تلگرام ⇄ بله مارک‌داون، UTF-16 |
 | `bridge/logbuf.py` | 📜 موتور لاگ | بافر حلقه‌ای زنده |

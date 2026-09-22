@@ -46,19 +46,10 @@ async def probe_tg_access(tg_client, chat_id) -> tuple[bool, str]:
 
 
 async def probe_bale_access(bale_api, chat_id) -> tuple[bool, str]:
-    """آیا حساب/ربات بله می‌تواند در کانال بنویسد؟ (ارسال و حذف پیام آزمایشی)"""
-    try:
-        res = await bale_api.send_message(int(chat_id), "🔔 تست دسترسی پل")
-        mid = (res or {}).get("message_id")
-        if not mid:
-            return False, "✘ ارسال ناموفق"
-        try:
-            await bale_api.delete_message(int(chat_id), mid)
-        except Exception:
-            pass
-        return True, "✔ دسترسی دارد (ارسال/حذف تست شد)"
-    except Exception as e:
-        return False, f"✘ {str(e)[:80]}"
+    """از موتور gateway بله — همان منطق، یک‌جا نگهداری می‌شود."""
+    from .bale import BaleBotGateway
+
+    return await BaleBotGateway.probe(bale_api, int(chat_id))
 
 
 class Wizard:
@@ -594,7 +585,7 @@ class Wizard:
     async def _bale_user_api(self):
         if not self.store.bale_self():
             return None
-        from .bale_user import BaleUserAPI
+        from .bale import BaleUserAPI
 
         api = BaleUserAPI(session_file=self.cfg.BALE_SESSION, db=self.db)
         try:

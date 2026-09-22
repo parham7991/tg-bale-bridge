@@ -8,7 +8,7 @@ from aiobale.enums import ChatType, PeerType
 from aiobale.types import Chat, Message, MessageContent, Peer, SelectedMessages
 from aiobale.types.message_content import DocumentMessage, MessageCaption, TextMessage
 
-from bridge.bale_user import BaleUserAPI, _classify_document
+from bridge.bale import BaleUserAPI, _classify_document
 from bridge.db import DB
 from bridge.transfer import Bridge
 from tests.conftest import Cfg, run

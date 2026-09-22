@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2026-09-22
+
+### Changed — 🟡 Bale logic: from one 741-line file to a modular engine package
+- **All Bale-side logic extracted into `bridge/bale/`** — every section its own module
+  with one focused engine (same pattern as the v2.3.0 dashboard refactor):
+  - `bridge/bale/types_map.py` — pure mappings: chat types, media classification, wrapper unwrapping
+  - `bridge/bale/session.py` — **BaleSession**: shared state (aiobale client, id/file/date caches, lifecycle)
+  - `bridge/bale/resolver.py` — **ResolverEngine**: chat ids, usernames, chat types, reply refs
+  - `bridge/bale/normalize.py` — **NormalizeEngine**: internal Bale message ⇄ Bot-API dict
+  - `bridge/bale/events.py` — **EventsEngine**: dispatcher wiring, `deleted_messages` surfacing, listen loop
+  - `bridge/bale/sender.py` — **SenderEngine**: every `send_*` with full fallback chain (gif/sticker/video_note/…)
+  - `bridge/bale/editor.py` — **EditorEngine**: edit text/caption + delete with cached dates
+  - `bridge/bale/files.py` — **FilesEngine**: download + access-hash cache
+  - `bridge/bale/admin_ops.py` — **AdminOpsEngine**: invite + make-user-admin (selfbot promotes the bot)
+  - `bridge/bale/profile.py` — **ProfileEngine**: `get_me` / `get_chat`
+  - `bridge/bale/gateway.py` — **BaleBotGateway**: resolve + access probe (single source for admin/wizard/dashboard)
+  - `bridge/bale/routing.py` — **BaleEventRouter**: all Bale event routing (selfbot stream + hybrid bot panel)
+  - `bridge/bale/facade.py` — **BaleUserAPI**: compatibility façade composing all engines
+- `main.py` now delegates Bale event routing to `BaleEventRouter`; `admin._resolve_bale`
+  and `wizard.probe_bale_access` (also used by the dashboard) now delegate to `BaleBotGateway`
+- `bridge/bale_user.py` kept as a one-line re-export shim — no breaking imports
+- No behavior change; **161 tests green**, ruff clean
+
+[2.4.0]: https://github.com/parham7991/tg-bale-bridge/compare/v2.3.0...v2.4.0
+
 ## [2.3.0] - 2026-09-22
 
 ### Changed — 🧱 per-section modules & engines (backend architecture)

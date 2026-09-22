@@ -236,7 +236,7 @@ class Admin:
 
     async def cmd_promote(self, platform, args, msg):
         """سلف بله (ادمین کانال) ربات بله را به کانال‌ها اضافه و ادمین می‌کند."""
-        from .bale_user import BaleUserAPI
+        from .bale import BaleUserAPI
 
         if not isinstance(self.bale, BaleUserAPI):
             return ("🛡 این کار با سلف بله انجام می‌شود — در حالت ربات ممکن نیست.\n"
@@ -481,24 +481,10 @@ class Admin:
         return int(marked), label, username
 
     async def _resolve_bale(self, ref: str):
-        ref = ref.strip()
-        if ref.isdigit() or (ref.startswith("-") and ref[1:].isdigit()):
-            chat_id = ref
-        elif ref.startswith("@"):
-            chat_id = ref
-        else:
-            chat_id = "@" + ref
-        try:
-            chat = await self.bale.get_chat(chat_id)
-        except Exception as e:
-            raise ValueError(
-                f"چت بله «{ref}» پیدا نشد ({e}). ربات بله باید در کانال/گروه عضو "
-                "(ترجیحاً ادمین) باشد. برای کانال خصوصی، پیامی از آن را به ربات فوروارد "
-                "کنید و آیدی عددی را بگیرید."
-            ) from e
-        username = (chat.get("username") or "").lstrip("@")
-        label = chat.get("title") or chat.get("first_name") or username or ""
-        return str(chat.get("id")), label, username
+        """از موتور gateway بله — همان منطق، یک‌جا نگهداری می‌شود."""
+        from .bale import BaleBotGateway
+
+        return await BaleBotGateway(self.bale).resolve(ref)
 
 
 def _fmt_duration(seconds: float) -> str:
