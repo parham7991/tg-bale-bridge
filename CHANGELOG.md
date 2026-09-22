@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.15.0] - 2026-09-22
+
+### Changed — 🚀 runtime package: the entry point goes modular
+- **All startup/lifecycle logic extracted from `main.py` into `bridge/runtime/`**
+  (the entry point — the last monolith besides `config.py`):
+  - `bridge/runtime/types_map.py` — ASCII/Perisan banner + `is_installer_mode`
+    (install mode ⇔ store not yet installed)
+  - `bridge/runtime/overrides.py` — **OverridesEngine**: applies store→cfg at
+    boot; only fills blank cfg fields (`.env` always wins)
+  - `bridge/runtime/installer.py` — **InstallerEngine**: light installer boot —
+    control bot + Wizard (+ optional dashboard), clean exit paths
+  - `bridge/runtime/wiring.py` — **WiringEngine**: Bale side (self-bot via
+    aiobale or BotAPI + auto ADMIN_BALE_ID), Telegram side (TgSelfSession),
+    Bridge+Admin assembly, Dashboard context
+  - `bridge/runtime/bots.py` — **ControlBotsEngine**: Telegram control bot task
+    + optional combined Bale bot panel (user mode)
+  - `bridge/runtime/lifecycle.py` — **LifecycleEngine**: task-list build
+    (offsets from meta) + `run_all` with exact close order in `finally`
+  - `bridge/runtime/facade.py` — **Runtime**: the full boot flow (`run`) —
+    identical behavior to the old 223-line `main()`
+- **`main.py` stays a real launcher at the repo root** (the wizard's
+  `finish.py` execv's it) — now a thin shim: `Runtime.cli()`
+- 7 new offline engine tests (`tests/test_runtime_engines.py`):
+  banner/installer-mode, overrides precedence (fill-only-blank + env-wins),
+  lifecycle build/count + exact close order on error, package surface
+
+### Fixed
+- `sys.exit(1)` for config problems now runs **after** logging all problems
+  (was per-iteration in the old loop — same net behavior, now explicit)
+
 ## [2.14.0] - 2026-09-22
 
 ### Changed — ⚙️ runtime settings store: modular engine package

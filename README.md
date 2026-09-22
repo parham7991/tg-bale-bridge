@@ -108,6 +108,10 @@
 | **`bridge/textfmt/`** | 🎨 بستهٔ قالب‌بندی | ↓ تفکیک کامل ↓ |
 | `textfmt/tg2bale.py` / `bale2tg.py` | 🔤 تبدیل دوطرفه | موجودیت‌های تلگرام ⇄ Markdown بله با ریاضی UTF-16 |
 | `textfmt/splitting.py` / `headers.py` / `renderers.py` | ✂️ برش، هدر، جانشین | چندپیامی‌کردن، «باز‌ارسال از»، نظرسنجی/تاس/مکان |
+| **`bridge/runtime/`** | 🚀 بستهٔ چرخهٔ اجرا | ↓ تفکیک کامل ↓ (نقطهٔ ورود ماژولار) |
+| `runtime/facade.py` | 🧩 Runtime | جریان کامل بوت — همان رفتار main قدیمی |
+| `runtime/overrides.py` / `installer.py` | ⚙️ اورراید و نصاب | store→cfg (فقط خانه‌های خالی)، بوت سبک ویزارد |
+| `runtime/wiring.py` / `bots.py` / `lifecycle.py` | 🔌 سیم‌کشی، بات‌ها، چرخه | سمت بله/تلگرام+پل+ادمین، بات‌های کنترلی، صف وظایف و پاک‌سازی |
 | `bridge/logbuf.py` | 📜 موتور لاگ | بافر حلقه‌ای زنده |
 | **`bridge/dashboard/`** | 🌐 بستهٔ داشبورد | ↓ تفکیک کامل ↓ |
 | `dashboard/app.py` | مونتاژ | کلاس Dashboard + aiohttp |
