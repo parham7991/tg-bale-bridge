@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.17.3] - 2026-09-22
+
+### Fixed — headless full-mode boot: Telegram self side
+- `wiring.tg_side()` no longer relies on Telethon's interactive
+  `client.start()`: it now does `connect()` + `is_user_authorized()` first
+  (fast path for an authorized session file) and only falls back to
+  `start(phone=…)` when `TG_PHONE` is set — otherwise a clear Persian error
+  instead of `ValueError: No phone number or bot token provided.` under
+  nohup (found on the live server right after wizard setup).
+- `bale_side()` log label now reflects the API actually built (self vs bot)
+  instead of the raw `BALE_MODE` env value.
+
 ## [2.17.2] - 2026-09-22
 
 ### Fixed — live-server bug: Bale **channel** usernames never resolved

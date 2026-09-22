@@ -23,7 +23,8 @@ class WiringEngine:
     # ───────────────────────────── سمت بله ─────────────────────────────
     async def bale_side(self):
         """سلف (aiobale) یا ربات (BotAPI) + get_me + ادمین خودکار خودچت."""
-        if self.cfg.BALE_MODE == "user" or self.store.bale_self():
+        is_self = self.cfg.BALE_MODE == "user" or bool(self.store.bale_self())
+        if is_self:
             from ..bale import BaleUserAPI
 
             bale = BaleUserAPI(
@@ -39,7 +40,7 @@ class WiringEngine:
         except BotAPIError as e:
             logger.error("اتصال به بله ناموفق — توکن/نشست را بررسی کنید: %s", e)
             sys.exit(1)
-        label = "حساب بله (سلف)" if self.cfg.BALE_MODE == "user" else "ربات بله"
+        label = "حساب بله (سلف)" if is_self else "ربات بله"
         logger.info("%s: @%s (id=%s)", label, bale_me.get("username"), bale_me.get("id"))
 
         if self.cfg.BALE_MODE == "user" and not self.cfg.ADMIN_BALE_ID:
@@ -53,7 +54,14 @@ class WiringEngine:
     async def tg_side(self):
         tg = TgSelfSession.build(self.cfg.SESSION_PATH,
                                  self.cfg.TG_API_ID, self.cfg.TG_API_HASH)
-        await tg.start(phone=self.cfg.TG_PHONE or None)
+        await tg.connect()
+        if not await tg.is_user_authorized():
+            # مسیر تعاملی تلگرام در nohup به ValueError می‌کشد — صریح خطا بده
+            if not self.cfg.TG_PHONE:
+                logger.error("سشن تلگرام معتبر نیست — یک بار python login.py را "
+                             "اجرا کنید یا از ویزارد بات، ورود سلف را کامل کنید")
+                sys.exit(1)
+            await tg.start(phone=self.cfg.TG_PHONE)
         me = await tg.get_me()
         logger.info("حساب تلگرام (سلف): %s (id=%s)", me.username or me.first_name, me.id)
         return tg, me
