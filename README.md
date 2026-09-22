@@ -96,7 +96,9 @@
 | `bale/resolver.py` / `normalize.py` / `types_map.py` | 🔧 تبدیل و شناسایی | شناسه/نوع چت، نرمال‌سازی ⇄ Bot-API |
 | `bale/admin_ops.py` / `profile.py` | 👑 ادمین و پروفایل | ادمین‌کردن ربات توسط سلف، get_me/get_chat |
 | `bale/gateway.py` / `routing.py` / `facade.py` | 🚪 دروازه و مسیریابی | resolve + پروب، روتر رویدادها، نمأی سازگاری |
-| `bridge/bot_api.py` | 🟡 BotAPI عمومی بله | حالت ربات و همهٔ توکن‌ها |
+| **`bridge/botapi/`** | 🔌 بستهٔ کلاینت Bot-API | ↓ تفکیک کامل ↓ (بله + تلگرام) |
+| `botapi/transport.py` / `session.py` | 🌐 انتقال HTTP | retry، rate-limit، multipart، نشست تنبل |
+| `botapi/methods.py` / `sender.py` / `files.py` / `events.py` | 📤 متدها | پایه، رسانه‌ها، دانلود، long-polling |
 | `bridge/db.py` / `store.py` | 💾 موتور داده | نگاشت‌ها + تنظیمات زمان اجرا |
 | `bridge/formatter.py` | 🎨 موتور قالب | تلگرام ⇄ بله مارک‌داون، UTF-16 |
 | `bridge/logbuf.py` | 📜 موتور لاگ | بافر حلقه‌ای زنده |

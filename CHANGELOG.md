@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.11.0] - 2026-09-22
+
+### Changed — 🔌 Bot-API client: modular engine package
+- **The shared HTTP client (`bot_api.py`, used by both Bale and Telegram bot
+  surfaces) extracted into `bridge/botapi/`** — same per-section engines pattern:
+  - `bridge/botapi/types_map.py` — pure mappings: URL builders, media-method
+    table (kind → method/field), media-group payload builder (1024 caption cap)
+  - `bridge/botapi/session.py` — **BotAPISession**: lazy aiohttp session
+    (180s total / 30s connect), rebuild after close
+  - `bridge/botapi/transport.py` — **CallEngine**: the 4-attempt retry loop,
+    `retry_after` rate-limit handling, multipart/JSON serialization + `BotAPIError`
+  - `bridge/botapi/methods.py` — **MethodsEngine**: getMe/getChat/getUpdates/
+    sendMessage/chat-action/edit*/deleteMessage/forwardMessage
+  - `bridge/botapi/sender.py` — **SenderEngine**: all media senders + location/
+    contact/sendMediaGroup (via the mapping table)
+  - `bridge/botapi/files.py` — **FilesEngine**: getFile + streaming download
+  - `bridge/botapi/events.py` — **ListenEngine**: endless long-polling with
+    offset bootstrap (skip stale backlog) and never-die error handling
+  - `bridge/botapi/facade.py` — **BotAPI**: compatibility façade — exact legacy
+    surface (`call`, `url`, `file_url`, all send_*/edit_*, `listen`, `close`,
+    `_get_session`, `me`)
+- Engines call through `api.call` live, so patching `call` on the façade in
+  tests affects every method
+- `bridge/bot_api.py` kept as a re-export shim — every `from .bot_api import`
+  in bale/transfer/wizard/dashboard/tests keeps working
+- No behavior change; **276 tests green** (16 new engine tests), ruff clean
+
+[2.11.0]: https://github.com/parham7991/tg-bale-bridge/compare/v2.10.0...v2.11.0
+
 ## [2.10.0] - 2026-09-22
 
 ### Changed — 🎛 admin panel: modular engine package
