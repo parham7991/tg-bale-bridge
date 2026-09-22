@@ -60,6 +60,12 @@ async def main():
     label = "حساب بله (سلف)" if cfg.BALE_MODE == "user" else "ربات بله"
     log.info("%s: @%s (id=%s)", label, bale_me.get("username"), bale_me.get("id"))
 
+    if cfg.BALE_MODE == "user" and not cfg.ADMIN_BALE_ID:
+        # پنل ادمین بله بدون هیچ تنظیمی: در بله به خودتان پیام بدهید (ذخیره‌ها/خودچت)
+        cfg.ADMIN_BALE_ID = int(bale_me.get("id") or 0)
+        log.info("ADMIN_BALE_ID خودکار = %s (خودتان) — در بله به خودتان /help بدهید",
+                 cfg.ADMIN_BALE_ID)
+
     tg = TelegramClient(str(cfg.SESSION_PATH), cfg.TG_API_ID, cfg.TG_API_HASH)
     await tg.start(phone=cfg.TG_PHONE or None)
     me = await tg.get_me()
@@ -74,12 +80,8 @@ async def main():
                   log_buffer=log_handler, started_at=started_at)
     register_tg(tg, bridge, admin, me.id)
 
-    if not cfg.ADMIN_BALE_ID:
-        if cfg.BALE_MODE == "user" and not cfg.BALE_TOKEN:
-            log.warning("ADMIN_BALE_ID تنظیم نشده — پنل ادمین فقط از تلگرام در دسترس است "
-                        "(بات مدیریتی / Saved Messages)")
-        else:
-            log.warning("ADMIN_BALE_ID تنظیم نشده — در ربات بله /start بزنید")
+    if not cfg.ADMIN_BALE_ID and cfg.BALE_MODE == "bot":
+        log.warning("ADMIN_BALE_ID تنظیم نشده — در ربات بله /start بزنید")
 
     pairs = db.list_pairs()
     log.info("%d جفت کانال فعال است", len(pairs))
@@ -100,6 +102,35 @@ async def main():
             tg_bot_task = asyncio.create_task(tgbot.start())
     else:
         log.info("TG_BOT_TOKEN تنظیم نشده — بات مدیریت تلگرام غیرفعال است")
+
+    # ---------- ربات بله به‌عنوان سطح ادمین در حالت سلف‌بات (ترکیبی، اختیاری) ----------
+    bale_bot_api = None
+    if cfg.BALE_MODE == "user" and cfg.BALE_TOKEN:
+        bale_bot_api = BotAPI(cfg.BALE_TOKEN, cfg.BALE_API_BASE)
+        try:
+            bale_bot_api.me = await bale_bot_api.get_me()
+        except BotAPIError as e:
+            log.error("ربات بله (ترکیبی) ناموفق — BALE_TOKEN را بررسی کنید: %s", e)
+            bale_bot_api = None
+        if bale_bot_api:
+            log.info("حالت ترکیبی: ربات بله هم فعال — پنل ادمین در چت خصوصی ربات هم جواب می‌دهد")
+
+    async def on_bale_bot_update(upd, offset):
+        db.set_meta("bale_bot_offset", str(offset))
+        m = upd.get("message")
+        if not m:
+            return
+        chat = m.get("chat") or {}
+        if chat.get("type") != "private":
+            return  # کانال‌ها فقط از سشن کاربر می‌آیند (جلوگیری از دوباره‌کاری)
+        uid = (m.get("from") or {}).get("id")
+        text = m.get("text") or ""
+        is_forward = bool(m.get("forward_from_chat") or m.get("forward_from"))
+        if not (text.strip() or is_forward):
+            return
+        reply = await admin.handle("bale", chat.get("id"), uid, text, m)
+        if reply:
+            await bale_bot_api.send_message(chat.get("id"), reply)
 
     async def on_bale_update(upd, offset):
         db.set_meta("bale_offset", str(offset))
@@ -143,11 +174,18 @@ async def main():
     ]
     if tg_bot_task:
         tasks.append(tg_bot_task)
+    if bale_bot_api:
+        bot_offset_raw = db.get_meta("bale_bot_offset")
+        bot_offset = int(bot_offset_raw) if bot_offset_raw else None
+        tasks.append(bale_bot_api.listen(
+            on_bale_bot_update, offset=bot_offset, timeout=cfg.BALE_POLL_TIMEOUT))
     try:
         await asyncio.gather(*tasks)
     finally:
         if tg_bot_api:
             await tg_bot_api.close()
+        if bale_bot_api:
+            await bale_bot_api.close()
         await bale.close()
 
 

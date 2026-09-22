@@ -37,6 +37,8 @@ class Cfg:
         self.LIMIT_CAPTION_GROUP = 1024
         self.ADMIN_BALE_ID = 42
         self.ADMIN_TG_ID = 777
+        self.BALE_MODE = "bot"
+        self.BALE_TOKEN = ""
 
 
 class FakeMsg:
@@ -214,15 +216,9 @@ def bridge(tg, bale, db, cfg):
 
 
 @pytest.fixture
-def admin(db, bale, tg, bridge):
-    return Admin(db, bale, tg, bridge, _admin_cfg())
-
-
-def _admin_cfg():
-    class A:
-        ADMIN_BALE_ID = 42
-        ADMIN_TG_ID = 777
-    return A()
+def admin(db, bale, tg, bridge, cfg):
+    # همان نمونهٔ cfg مشترک — تست‌ها می‌توانند BALE_MODE و غیره را تغییر دهند
+    return Admin(db, bale, tg, bridge, cfg)
 
 
 @pytest.fixture

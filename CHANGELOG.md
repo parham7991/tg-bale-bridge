@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-09-22
+
+### Added
+- 🎛 **Quad-surface admin panel** — the identical command panel now answers from FOUR
+  surfaces: Bale bot chat · **Bale self-chat** (message yourself in Bale — the selfbot
+  replies!) · Telegram control bot · Telegram Saved Messages
+- **Hybrid Bale mode** — with `BALE_MODE=user` *and* `BALE_TOKEN` together, the Bale bot
+  runs alongside the selfbot as an extra admin surface (channel mirroring stays on the
+  user session only — no duplicates, separate `bale_bot_offset`)
+- **Zero-config Bale admin** — in user mode `ADMIN_BALE_ID` defaults to your own account
+  id, so messaging yourself `/help` in Bale just works
+- `/status` and `/whoami` are now mode-aware: selfbot vs bot, active admin surfaces,
+  two-way delete coverage in user mode
+- 4 new surface tests (97 total)
+
+[1.3.0]: https://github.com/parham7991/tg-bale-bridge/compare/v1.2.1...v1.3.0
+
 ## [1.2.1] - 2026-09-22
 
 ### Fixed

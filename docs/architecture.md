@@ -41,7 +41,7 @@ flowchart LR
 | Log buffer | `bridge/logbuf.py` | In-memory ring buffer serving the `/logs` command |
 | Formatter | `bridge/formatter.py` | Telegram entities ⇄ Bale Markdown, UTF-16 offset math, renderers for polls/dice/venues/services |
 | Store | `bridge/db.py` | Channel pairs, message mapping (for replies/edits/deletes), loop-prevention ledger |
-| Admin | `bridge/admin.py` | `/add`, `/list`, `/mode`, `/remove`, `/test`, `/id`, `/status`, `/whoami`, `/pause`, `/resume`, `/logs` |
+| Admin | `bridge/admin.py` | `/add`, `/list`, `/mode`, `/remove`, `/test`, `/id`, `/status`, `/whoami`, `/pause`, `/resume`, `/logs` — the identical panel on 4 surfaces: Bale bot · Bale self-chat · TG control bot · TG Saved Messages |
 
 ## Data model
 

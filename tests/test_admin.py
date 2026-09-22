@@ -75,3 +75,26 @@ class TestIdDiscovery:
 
     def test_no_forward_gives_minimal_help(self, admin):
         assert "پل" in run(admin.handle("bale", 42, 42, "سلام چی کار کنم؟"))
+
+
+class TestSurfaces:
+    """پنل چهارسطحی — حالت‌آگاهی سلف‌بات/ربات."""
+
+    def test_whoami_user_mode(self, admin, cfg):
+        cfg.BALE_MODE = "user"
+        cfg.BALE_TOKEN = "x"
+        out = run(admin.handle("bale", 42, 42, "/whoami"))
+        assert "سلف‌بات" in out and "پنل" in out and "خودچت" in out and "ربات بله" in out
+
+    def test_whoami_bot_mode(self, admin, cfg):
+        out = run(admin.handle("bale", 42, 42, "/whoami"))
+        assert "ربات بله" in out and "خودچت" not in out
+
+    def test_status_user_mode_two_way_delete(self, admin, cfg, pair):
+        cfg.BALE_MODE = "user"
+        out = run(admin.handle("bale", 42, 42, "/status"))
+        assert "دوطرفه" in out and "سلف‌بات" in out
+
+    def test_status_bot_mode_unchanged(self, admin, pair):
+        out = run(admin.handle("bale", 42, 42, "/status"))
+        assert "mirbot" in out and "دوطرفه" not in out

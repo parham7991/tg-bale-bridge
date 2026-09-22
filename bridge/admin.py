@@ -78,6 +78,27 @@ class Admin:
         self.tg_bot_info = tg_bot_info or {}
         self._current_user_id = None
 
+    # ---------------------------------------------------------- سطوح مدیریتی
+    def _is_user_mode(self) -> bool:
+        return getattr(self.cfg, "BALE_MODE", "bot") == "user"
+
+    def _bale_mode_label(self) -> str:
+        return "سلف‌بات بله (BALE_MODE=user)" if self._is_user_mode() else "ربات بله"
+
+    def _surfaces(self) -> str:
+        """پنل‌های فعال مدیریتی — همه به یک پنل وصل‌اند."""
+        names = []
+        if self._is_user_mode():
+            names.append("خودچت بله (پیام به خودتان)")
+            if getattr(self.cfg, "BALE_TOKEN", ""):
+                names.append("ربات بله")
+        else:
+            names.append("ربات بله")
+        if self.tg_bot_info:
+            names.append("بات تلگرام")
+        names.append("Saved Messages تلگرام")
+        return " + ".join(names)
+
     # ---------------------------------------------------------- ورودی
     async def handle(self, platform: str, chat_id, user_id, text: str, msg=None) -> str | None:
         text = (text or "").strip()
@@ -143,16 +164,19 @@ class Admin:
         bot_name = self.tg_bot_info.get("username") or "غیرفعال"
         state = "⏸ متوقف (همگام‌سازی خاموش)" if self.bridge.paused else "▶️ در حال همگام‌سازی"
         uptime = _fmt_duration(time.time() - self.started_at)
+        bale_desc = f"حساب بله (سلف‌بات): {me}" if self._is_user_mode() else f"ربات بله: {me}"
+        coverage = "حذف دوطرفه 🗑" if self._is_user_mode() else "حذف (تلگرام→بله)"
         lines = [
             "🩺 وضعیت پل",
             f"▫️ حالت: {state}",
             f"▫️ حساب تلگرام (سلف): {tg_name}",
-            f"▫️ ربات بله: {me}",
+            f"▫️ {bale_desc}",
             f"▫️ بات مدیریت تلگرام: {bot_name}",
+            f"▫️ پنل‌های مدیریت: {self._surfaces()}",
             f"▫️ جفت‌های کانال: {stats['pairs']}",
             f"▫️ پیام‌های همگام‌شده (نگاشت‌شده): {stats['mapped']}",
             f"▫️ زمان فعالیت: {uptime}",
-            "▫️ پوشش: متن/رسانه/آلبوم/فوروارد/ریپلای/ویرایش + حذف (تلگرام→بله)",
+            f"▫️ پوشش: متن/رسانه/آلبوم/فوروارد/ریپلای/ویرایش + {coverage}",
         ]
         return "\n".join(lines)
 
@@ -163,14 +187,17 @@ class Admin:
             tg_line = f"{tg_name} (id={tg_me.id})"
         except Exception:
             tg_line = "؟"
-        bale_line = f"@{self.bale_bot.get('username')} (id={self.bale_bot.get('id')})"
+        bale_user = self.bale_bot.get("username")
+        bale_name = f"@{bale_user}" if bale_user else (self.bale_bot.get("first_name") or "?")
+        bale_line = f"{bale_name} (id={self.bale_bot.get('id')}) — {self._bale_mode_label()}"
         bot_line = (f"@{self.tg_bot_info.get('username')} (id={self.tg_bot_info.get('id')})"
                     if self.tg_bot_info else "غیرفعال")
         return ("👤 هویت\n"
                 f"▫️ شما (ادمین): {self._current_user_id}\n"
                 f"▫️ سلف‌بات / حساب تلگرام: {tg_line}\n"
-                f"▫️ ربات بله: {bale_line}\n"
-                f"▫️ بات مدیریت تلگرام: {bot_line}")
+                f"▫️ بله: {bale_line}\n"
+                f"▫️ بات مدیریت تلگرام: {bot_line}\n"
+                f"▫️ پنل‌های فعال: {self._surfaces()}")
 
     async def cmd_pause(self, platform, args, msg):
         self.bridge.paused = True
