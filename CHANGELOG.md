@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.13.0] - 2026-09-22
+
+### Changed — 🎨 text formatting: modular engine package
+- **All Telegram⇄Bale text/entity conversion extracted into `bridge/textfmt/`**
+  (the `formatter.py` file):
+  - `bridge/textfmt/types_map.py` — limits, Bale Markdown regex, UTF-16 math
+  - `bridge/textfmt/splitting.py` — **SplitEngine**: `truncate`, `split_text`
+    (line-boundary first, hard split fallback) + `join_header`
+  - `bridge/textfmt/tg2bale.py` — **TgToBaleEngine**: Telegram entities → Bale
+    Markdown (bold/italic/links, UTF-16 offsets, overlap = outermost wins)
+  - `bridge/textfmt/bale2tg.py` — **BaleToTgEngine**: Bale Markdown →
+    (plain text, python-offset entities)
+  - `bridge/textfmt/headers.py` — **HeadersEngine**: "forwarded from" headers
+    for both sides (Telethon entity lookup / Bot-API dict shapes)
+  - `bridge/textfmt/renderers.py` — **RenderersEngine**: poll/dice/venue/service/
+    unsupported fallback texts (error-safe)
+  - `bridge/textfmt/facade.py` — re-exports every function; `from bridge import
+    formatter as fmt` keeps working (transfer engines untouched)
+- `bridge/formatter.py` kept as a re-export shim
+- No behavior change; **309 tests green** (17 new engine tests), ruff clean
+
+[2.13.0]: https://github.com/parham7991/tg-bale-bridge/compare/v2.12.0...v2.13.0
+
 ## [2.12.0] - 2026-09-22
 
 ### Changed — 💾 storage layer: modular engine package

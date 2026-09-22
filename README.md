@@ -104,7 +104,9 @@
 | `dbstore/pairs.py` / `map.py` | 🔗 جفت‌ها و نقشه | CRUD جفت‌ها، نقشهٔ دوطرفهٔ پیام‌ها |
 | `dbstore/loopcache.py` / `meta.py` / `stats.py` | 🛡 ضدلوپ، متا، آمار | دفترچه یک‌بارمصرف، اثر انگشت پنجره‌ای |
 | `bridge/store.py` | ⚙️ تنظیمات زمان اجرا | اکانت‌ها و توکن‌ها روی همان دیتابیس |
-| `bridge/formatter.py` | 🎨 موتور قالب | تلگرام ⇄ بله مارک‌داون، UTF-16 |
+| **`bridge/textfmt/`** | 🎨 بستهٔ قالب‌بندی | ↓ تفکیک کامل ↓ |
+| `textfmt/tg2bale.py` / `bale2tg.py` | 🔤 تبدیل دوطرفه | موجودیت‌های تلگرام ⇄ Markdown بله با ریاضی UTF-16 |
+| `textfmt/splitting.py` / `headers.py` / `renderers.py` | ✂️ برش، هدر، جانشین | چندپیامی‌کردن، «باز‌ارسال از»، نظرسنجی/تاس/مکان |
 | `bridge/logbuf.py` | 📜 موتور لاگ | بافر حلقه‌ای زنده |
 | **`bridge/dashboard/`** | 🌐 بستهٔ داشبورد | ↓ تفکیک کامل ↓ |
 | `dashboard/app.py` | مونتاژ | کلاس Dashboard + aiohttp |
