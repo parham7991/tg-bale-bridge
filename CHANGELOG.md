@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0] - 2026-09-22
+
+### Changed — ✈️ Telegram control bot: modular engine package
+- **All Telegram-bot logic extracted into `bridge/tgbot/`** — same per-section
+  modules+engines pattern as `bridge/bale/` and `bridge/dashboard/`:
+  - `bridge/tgbot/types_map.py` — pure mappings: START/SETUP texts, private-chat
+    check, sender extraction, forward detection (all 3 Bot-API forward shapes)
+  - `bridge/tgbot/session.py` — **TgBotSession**: bot identity (`get_me`), offset
+    persistence (`tgbot_offset`), listen loop
+  - `bridge/tgbot/claim.py` — **ClaimEngine**: automatic admin (first `/start`
+    claims the bot) or the 🔒 owner-locked refusal
+  - `bridge/tgbot/guards.py` — **GuardsEngine**: admin check + refusal message
+  - `bridge/tgbot/routing.py` — **TgBotEventRouter**: full event dispatch
+    (callback → wizard, no-admin → claim, setup → wizard, active wizard →
+    handle_text, non-admin → 🔒, rest → admin panel)
+  - `bridge/tgbot/facade.py` — **TgAdminBot**: compatibility façade composing
+    all engines (unchanged public surface: `start()` / `on_update` / `_is_admin`)
+- `main.py` imports from `bridge.tgbot`; `bridge/tg_bot.py` kept as a one-line
+  re-export shim — no breaking imports
+- No behavior change; **192 tests green** (19 new offline engine tests), ruff clean
+
+[2.6.0]: https://github.com/parham7991/tg-bale-bridge/compare/v2.5.0...v2.6.0
+
 ## [2.5.0] - 2026-09-22
 
 ### Changed — 🔐 Bale selfbot login: dedicated engine

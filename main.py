@@ -22,8 +22,8 @@ from bridge.bot_api import BotAPI, BotAPIError
 from bridge.dashboard import Dashboard
 from bridge.db import DB
 from bridge.store import Store
-from bridge.tg_bot import TgAdminBot
 from bridge.tg_user import register as register_tg
+from bridge.tgbot import TgAdminBot
 from bridge.transfer import Bridge
 from bridge.wizard import Wizard
 

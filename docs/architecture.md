@@ -38,11 +38,12 @@ flowchart LR
 | Bot-API clients | `bridge/bot_api.py` | Generic client for **both** Bale and Telegram Bot API: multipart uploads, file downloads, long-polling, `retry_after` handling |
 | Runtime settings | `bridge/store.py` | DB-backed config (accounts, admin, tokens) — `.env` shrinks to one token |
 | Web dashboard | `bridge/dashboard/` (package) | `app.py` assembly · `api.py` thin HTTP · `auth.py` AuthEngine (PBKDF2/sessions/lockout) · `context.py` RuntimeCtx · `engines/{status,pairs,control,logs,ops}` domain engines |
+| TG control-bot package | `bridge/tgbot/` (package) | `types_map` pure mappings · `session` TgBotSession (identity+offset+listen) · `claim` ClaimEngine (first-/start-claims-admin) · `guards` GuardsEngine · `routing` TgBotEventRouter · `facade` TgAdminBot compat façade |
 | Bale logic package | `bridge/bale/` (package) | `types_map` pure mappings · `session` BaleSession (client+caches) · `resolver`/`normalize`/`events`/`sender`/`editor`/`files`/`admin_ops`/`profile` engines · `gateway` BaleBotGateway (resolve+probe) · `routing` BaleEventRouter · `login` BaleLoginEngine (phone auth, interactive login, client builder) · `facade` BaleUserAPI compat façade |
 
 | Installer wizard | `bridge/wizard.py` | In-bot setup: Telegram/Bale selfbot logins (Bale login delegated to `BaleLoginEngine`), Bale bot token, channel pairing with inline buttons, live access probes, auto-restart |
 | Bale selfbot adapter | `bridge/bale/` → `bridge/bale_user.py` (shim) · one-time login: `python login_bale.py` → `BaleLoginEngine.run_interactive()` | `BALE_MODE=user`: BotAPI-compatible façade over `aiobale` (logged-in user account). Normalizes internal messages to Bot-API shape and surfaces `message_deleted` events as `deleted_messages` updates — Bale→Telegram delete sync. Since v2.4.0 implemented as the modular `bridge/bale/` engine package; `bale_user.py` only re-exports it |
-| TG control bot | `bridge/tg_bot.py` | Remote management of the self-bot via a Telegram bot (same command panel) |
+| TG control bot | `bridge/tgbot/` → `bridge/tg_bot.py` (shim) | Remote management of the self-bot via a Telegram bot (same command panel). Since v2.6.0 implemented as the modular `bridge/tgbot/` engine package; `tg_bot.py` only re-exports it |
 | Log buffer | `bridge/logbuf.py` | In-memory ring buffer serving the `/logs` command |
 | Formatter | `bridge/formatter.py` | Telegram entities ⇄ Bale Markdown, UTF-16 offset math, renderers for polls/dice/venues/services |
 | Store | `bridge/db.py` | Channel pairs, message mapping (for replies/edits/deletes), loop-prevention ledger |
