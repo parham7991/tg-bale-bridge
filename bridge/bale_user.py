@@ -106,6 +106,16 @@ def _classify_document(doc: Any) -> str:
     return "document"
 
 
+def _unwrap(value: Any) -> Any:
+    """باز کردن wrapperهای aiobale (مثل StringValue که مقدار در ``.value`` است)."""
+    while value is not None and not isinstance(value, (str, int, float, bool)):
+        inner = getattr(value, "value", None)
+        if inner is None or inner is value:
+            break
+        value = inner
+    return value
+
+
 def _extract_id(obj: Any) -> int:
     for attr in ("id", "user_id", "chat_id"):
         v = getattr(obj, attr, None)
@@ -622,19 +632,20 @@ class BaleUserAPI:
         except Exception as exc:
             raise BotAPIError(f"get_me failed: {exc}") from exc
         uid = int(getattr(info, "id", 0) or 0)
-        name = getattr(info, "name", None)
-        username = getattr(info, "username", None)
-        if uid and (name is None or username is None):
+        user_obj = getattr(info, "user", None)  # ClientData.user → UserAuth
+        name = _unwrap(getattr(user_obj, "name", None)) or getattr(info, "name", None)
+        username = _unwrap(getattr(user_obj, "username", None)) or getattr(info, "username", None)
+        if uid and (not name or not username):
             try:
-                user = await self.client.load_user(uid)
-                name = name or getattr(user, "name", None)
-                username = username or getattr(user, "username", None)
+                user = await self.client.load_user(uid, ChatType.PRIVATE)
+                name = name or _unwrap(getattr(user, "name", None))
+                username = username or _unwrap(getattr(user, "username", None))
             except Exception:
                 pass
         return {
             "id": uid,
             "is_bot": False,
-            "first_name": (name or "Bale user"),
+            "first_name": str(name or "Bale user"),
             "username": str(username).lstrip("@") if username else None,
         }
 
@@ -653,8 +664,8 @@ class BaleUserAPI:
             name = "channel" if "CHANNEL" in gt else "group"
             self._chat_types[str(cid)] = name
             out["type"] = name
-            out["title"] = getattr(full, "title", None)
-            uname = getattr(full, "username", None)
+            out["title"] = _unwrap(getattr(full, "title", None))
+            uname = _unwrap(getattr(full, "username", None))
             if uname:
                 out["username"] = str(uname).lstrip("@")
         except Exception:
@@ -662,8 +673,8 @@ class BaleUserAPI:
                 user = await self.client.load_user(cid)
                 self._chat_types[str(cid)] = "private"
                 out["type"] = "private"
-                out["title"] = getattr(user, "name", None)
-                uname = getattr(user, "username", None)
+                out["title"] = _unwrap(getattr(user, "name", None))
+                uname = _unwrap(getattr(user, "username", None))
                 if uname:
                     out["username"] = str(uname).lstrip("@")
             except Exception:

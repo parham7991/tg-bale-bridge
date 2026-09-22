@@ -59,7 +59,7 @@ class FakeAioClient:
     async def get_me(self):
         return self.me
 
-    async def load_user(self, uid):
+    async def load_user(self, uid, chat_type=None):
         return SimpleNamespace(id=uid, name="من", username="me_user")
 
     async def get_full_group(self, cid):
