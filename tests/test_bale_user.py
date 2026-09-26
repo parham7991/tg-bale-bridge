@@ -382,3 +382,90 @@ def test_session_start_failure_logs_and_reraises(caplog):
             run(ses.start())
     assert ses.started is False
     assert any("ناموفق" in r.message for r in caplog.records)
+
+# ───── مسمومیت کش chat_type با نوع مبهم (رگرسیون v2.17.7) ─────
+
+def test_normalize_group_like_chat_marks_ambiguous(tmp_path):
+    """کانال با ChatType.GROUP در آپدیت → کش «group?» نه «group» قطعی."""
+    api, _ = make_api(tmp_path)
+    out = api.normalize(make_text_msg("x", chat_id=777, chat_type=ChatType.GROUP))
+    assert api.profile.s.chat_types["777"] == "group?"
+    assert out["chat"]["type"] == "group"        # خروجی تمیز می‌ماند
+
+
+def test_normalize_channel_type_is_authoritative(tmp_path):
+    api, _ = make_api(tmp_path)
+    api.normalize(make_text_msg("x", chat_id=888, chat_type=ChatType.CHANNEL))
+    assert api.profile.s.chat_types["888"] == "channel"
+
+
+def test_normalize_ambiguous_never_downgrades_cache(tmp_path):
+    api, _ = make_api(tmp_path)
+    api.profile.s.chat_types["999"] = "channel"   # قبلاً قطعی شده
+    api.normalize(make_text_msg("x", chat_id=999, chat_type=ChatType.GROUP))
+    assert api.profile.s.chat_types["999"] == "channel"
+
+
+def test_ensure_chat_type_reprobes_ambiguous(tmp_path):
+    """«group?» → پروب get_full_group → channel قطعی + اصلاح کش."""
+    from types import SimpleNamespace as NS
+
+    from bridge.bale.resolver import ResolverEngine
+
+    class FakeFull:
+        group_type = 1
+        title = "MARVELL"
+
+    class FakeClient:
+        def __init__(self):
+            self.probes = 0
+
+        async def get_full_group(self, cid):
+            self.probes += 1
+            return FakeFull()
+
+    client = FakeClient()
+    noted = {}
+    ses = NS(client=client, chat_types={"287806378": "group?"}, chat_meta={},
+             note_chat=lambda cid, info: noted.update({str(cid): info}))
+    r = ResolverEngine(ses)
+    ct = run(r.ensure_chat_type(287806378))
+    assert ct == ChatType.CHANNEL
+    assert client.probes == 1
+    assert ses.chat_types["287806378"] == "channel"
+    assert noted["287806378"]["type"] == "channel"
+    # کش قطعی شد → پروب دوباره لازم نیست
+    run(r.ensure_chat_type(287806378))
+    assert client.probes == 1
+
+
+def test_on_deleted_peer_group_does_not_poison(tmp_path):
+    """رویداد حذف با PeerType.GROUP → «group?» و کش قطعی را خراب نمی‌کند."""
+    from bridge.bale.events import EventsEngine
+
+    api, _ = make_api(tmp_path)
+    ses = api.profile.s
+    ses.chat_types["287806378"] = "channel"      # کش قطعیِ قبلی
+    sel = SimpleNamespace(ids=[1, 2], peer=SimpleNamespace(type=2, id=287806378))
+    out = []
+
+    async def _h(upd, off):
+        out.append(upd)
+
+    ses.handler = _h
+    eng = EventsEngine(ses, None)
+    run(eng.on_deleted(sel))
+    assert ses.chat_types["287806378"] == "channel"   # downgrade نشد
+    # رویداد حذف هم صادر شد
+    assert out and out[0]["deleted_messages"]["message_ids"] == [1, 2]
+
+
+def test_on_deleted_peer_group_sets_ambiguous_when_uncached(tmp_path):
+    from bridge.bale.events import EventsEngine
+
+    api, _ = make_api(tmp_path)
+    ses = api.profile.s
+    ses.handler = None
+    eng = EventsEngine(ses, None)
+    run(eng.on_deleted(SimpleNamespace(ids=[5], peer=SimpleNamespace(type=2, id=4242))))
+    assert ses.chat_types["4242"] == "group?"    # مبهم، نه «group» قطعی

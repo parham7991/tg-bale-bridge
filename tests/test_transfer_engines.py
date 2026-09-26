@@ -220,3 +220,95 @@ def test_tg_inbound_normalizes_marked_chat_id():
         kind, payload = qe.q_tg.get_nowait()
         assert kind == "delete" and payload == ("3815616564", [11])
     run(body())
+
+# ───── فالبک ویرایش TG→Bale: suppress پژواک + ترتیب امن (رگرسیون v2.17.7) ─────
+
+def _edit_msg(chat_id, mid=402, text="x"):
+    return SimpleNamespace(chat_id=chat_id, id=mid, message=text, text=text,
+                           entities=None, media=None, action=None, photo=None,
+                           video=None, video_note=None, voice=None, audio=None,
+                           gif=None, document=None, sticker=None, game=None,
+                           file=None, poll=None, dice=None, contact=None,
+                           geo=None, venue=None, grouped_id=None,
+                           reply_to_msg_id=None, forward=None, via_bot=None)
+
+
+def _edit_engine(bale, guard_calls, replace_ok=True):
+    from bridge.transfer.sync_edit import EditSyncEngine
+
+    db = SimpleNamespace(
+        other_side=lambda p, c, m: [{"platform": "bale", "chat": "777",
+                                     "msg": 55, "pair_id": 1, "row_id": 9}],
+        get_pair=lambda pid: {"id": 1, "mode": "both", "bale_chat_id": 777},
+        replace_map_dst=lambda *a: None,
+        mark_sent=lambda *a: None,
+    )
+    t2b = SimpleNamespace(msg_to_bale=bale.resend)
+    guard = SimpleNamespace(
+        suppress=lambda p, c, m: guard_calls.append(("suppress", p, str(c), m)),
+        release=lambda p, c, m: guard_calls.append(("release", p, str(c), m)),
+    )
+    cfg = SimpleNamespace(LIMIT_TEXT=4096)
+    return EditSyncEngine(None, bale, db, cfg, t2b, None, guard)
+
+
+def test_tg_edit_fallback_suppresses_echo_and_reorders():
+    calls = []
+
+    class Bale:
+        def __init__(self):
+            self.deleted = []
+
+        async def edit_message_caption(self, chat, mid, body):
+            from bridge.bot_api import BotAPIError
+            raise BotAPIError("UpdateMessageDenied")
+
+        async def edit_message_text(self, chat, mid, body):
+            from bridge.bot_api import BotAPIError
+            raise BotAPIError("UpdateMessageDenied")
+
+        async def delete_message(self, chat, mid):
+            self.deleted.append((chat, mid))
+            return {"ok": True}
+
+        async def resend(self, msg, dst, reply):
+            calls.append(("resend", dst))
+            return [66]
+
+    bale = Bale()
+    guard_calls = []
+    eng = _edit_engine(bale, guard_calls)
+    run(eng.process_tg_edit(_edit_msg(-1003815616564)))
+    # پژواک حذفِ بله باید سرکوب شود (وگرنه نسخهٔ تلگرامی هم حذف می‌شد)
+    assert ("suppress", "bale", "777", 55) in guard_calls
+    assert not any(c[0] == "release" for c in guard_calls)
+    # ترتیب امن: اول ارسال جایگزین، بعد حذف قدیمی
+    assert calls and bale.deleted == [("777", 55)]
+
+
+def test_tg_edit_fallback_send_fail_keeps_old_and_releases():
+    from bridge.bot_api import BotAPIError
+
+    class Bale:
+        def __init__(self):
+            self.deleted = []
+
+        async def edit_message_caption(self, chat, mid, body):
+            raise BotAPIError("UpdateMessageDenied")
+
+        async def edit_message_text(self, chat, mid, body):
+            raise BotAPIError("UpdateMessageDenied")
+
+        async def delete_message(self, chat, mid):
+            self.deleted.append((chat, mid))
+
+        async def resend(self, msg, dst, reply):
+            raise BotAPIError("send_document failed: InvalidArgument")
+
+    bale = Bale()
+    guard_calls = []
+    eng = _edit_engine(bale, guard_calls)
+    run(eng.process_tg_edit(_edit_msg(3815616564)))
+    # ارسال جایگزین شکست خورد → قدیمی حذف نشد + suppress آزاد شد
+    assert bale.deleted == []
+    assert ("release", "bale", "777", 55) in guard_calls

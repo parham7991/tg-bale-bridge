@@ -24,6 +24,25 @@ def chat_type_name(value: Any) -> str:
     return CHAT_TYPE_NAMES.get(v, "private")
 
 
+#: مقدار کش برای «گروه‌مانندِ مبهم» — در آپدیت‌های بله، کانال هم ممکن است با نوع
+#: group-like (ChatType.GROUP/SUPER_GROUP یا PeerType.GROUP) برسد؛ چنین مقدارهایی
+#: هرگز مستقیم برای ارسال استفاده نمی‌شوند تا ResolverEngine با get_full_group
+#: نوع قطعی (group/channel) را تعیین کند (رگرسیون v2.17.7: InvalidArgument رسانه).
+AMBIGUOUS_GROUP = "group?"
+
+GROUP_LIKE_CHAT_TYPES = {2, 5}     # ChatType: GROUP, SUPER_GROUP
+GROUP_LIKE_PEER_TYPES = {2}        # PeerType: GROUP (= کانال‌ها و گروه‌ها با هم!)
+
+
+def group_like_type_value(value: Any, peer_types: bool = False) -> bool:
+    """آیا مقدار عددیِ نوع چت/پیر «گروه‌مانند» است؟ (کانال ممکن است مبهم برسد)"""
+    try:
+        v = int(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return False
+    return v in (GROUP_LIKE_PEER_TYPES if peer_types else GROUP_LIKE_CHAT_TYPES)
+
+
 def peer_type(chat_type_name_str: str) -> Any:
     from aiobale.enums import PeerType
 

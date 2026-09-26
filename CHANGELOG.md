@@ -5,6 +5,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.17.7] - 2026-09-26
+
+### Fixed — Bale media sends (InvalidArgument) + edit-fallback deleted BOTH sides
+Two live bugs, found by bisecting against the real Bale API:
+
+- **Poisoned `chat_type` cache → `topic 3: InvalidArgument` on every
+  photo/document send.** Bale delivers channel activity with *group-like*
+  type values: incoming updates may carry `ChatType.GROUP` for a channel,
+  and delete events carry `PeerType.GROUP` — which in aiobale covers
+  **channels and groups alike** (`_resolve_peer_type`). `normalize()` and
+  `EventsEngine.on_deleted` wrote that ambiguous value into
+  `session.chat_types` as a definitive `"group"`, overwriting the correct
+  `"channel"` — afterwards `send_photo`/`send_document` went out with
+  `ChatType.GROUP` and Bale rejected them (text sends were tolerated,
+  which is why only media failed). Live-probe proof: same file + caption
+  → `GROUP` fails with `InvalidArgument`, `PRIVATE` with
+  `PermissionDenied`, `CHANNEL` succeeds.
+  - New `AMBIGUOUS_GROUP` (`"group?"`) cache marker +
+    `group_like_type_value()` (`bridge/bale/types_map.py`); ambiguous
+    values are **never** written as definitive and never downgrade an
+    authoritative cache entry (`setdefault` semantics in `normalize` /
+    `on_deleted`).
+  - `ResolverEngine.ensure_chat_type` re-probes with `get_full_group`
+    whenever the cache is missing **or ambiguous**, logs the correction,
+    and falls back to the cached enum if the probe transiently fails
+    (marker stays → next send re-probes; self-healing).
+- **TG→Bale edit fallback deleted the message on BOTH platforms.** Bale
+  denies caption/text edits on posts it didn't create
+  (`topic 7: UpdateMessageDenied` — server policy), so the fallback
+  kicked in: it deleted the Bale copy **without** `guard.suppress`, and
+  our own delete event echoed back through the mapping and deleted the
+  Telegram original too; the replacement send then failed (bug above) —
+  net result: message gone everywhere.
+  - Fallback now suppresses the Bale delete-echo (`guard.suppress` /
+    `release` on failure) and reorders to **send replacement first,
+    delete old copy second** — if the replacement fails, the old message
+    survives (same safe order the Bale→TG path already used).
+
+### Tests
+- +7 regression tests: ambiguous normalize (poison, authoritative,
+  no-downgrade), `ensure_chat_type` ambiguous re-probe + caching,
+  `on_deleted` peer-group handling (cached + uncached), edit-fallback
+  echo suppression + safe order, edit-fallback send-failure keeps old
+  message. Suite: 360 green.
+
 ## [2.17.6] - 2026-09-26
 
 ### Fixed — TG→Bale mirroring silently did nothing (marked vs bare chat id)

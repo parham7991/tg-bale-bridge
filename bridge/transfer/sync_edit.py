@@ -47,14 +47,24 @@ class EditSyncEngine:
                     await self.bale.edit_message_caption(o["chat"], o["msg"], body)
             except BotAPIError as e:
                 logger.warning("ویرایش در بله ناموفق (%s) — جایگزینی پیام", e)
+                # حذفِ خودمان رویداد حذفِ بله تولید می‌کند؛ بدون suppress، پژواکش
+                # نسخهٔ تلگرامی را هم حذف می‌کرد (باگ زندهٔ «هر دو پاک شدند»).
+                self.guard.suppress("bale", o["chat"], o["msg"])
                 try:
-                    await self.bale.delete_message(o["chat"], o["msg"])
+                    # اول جایگزین ارسال شود، بعد قدیمی حذف — اگر ارسال شکست خورد،
+                    # محتوا در بله باقی می‌ماند (ترتیب امن، مثل مسیر bale→tg).
                     ids = await self.t2b.msg_to_bale(msg, pair["bale_chat_id"], None)
-                    if ids:
-                        self.db.replace_map_dst(o["row_id"], "bale", str(o["chat"]),
-                                                ids[0])
-                        self.db.mark_sent("bale", str(o["chat"]), ids[0])
+                    if not ids:
+                        raise BotAPIError("جایگزینی پیام ویرایش‌شده ناموفق")
+                    try:
+                        await self.bale.delete_message(o["chat"], o["msg"])
+                    except Exception:
+                        logger.warning("حذف نسخهٔ قدیمی بله ناموفق — جایگزین ارسال شد")
+                    self.db.replace_map_dst(o["row_id"], "bale", str(o["chat"]),
+                                            ids[0])
+                    self.db.mark_sent("bale", str(o["chat"]), ids[0])
                 except Exception:
+                    self.guard.release("bale", o["chat"], o["msg"])
                     logger.exception("جایگزینی پیام ویرایش‌شده ناموفق")
 
     # --------------------------------- بله → تلگرام

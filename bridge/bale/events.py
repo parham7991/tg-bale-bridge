@@ -13,7 +13,7 @@ from aiobale.types import SelectedMessages
 
 from .normalize import NormalizeEngine
 from .session import BaleSession
-from .types_map import chat_type_name
+from .types_map import AMBIGUOUS_GROUP, group_like_type_value
 
 logger = logging.getLogger("bridge.bale.events")
 
@@ -44,7 +44,11 @@ class EventsEngine:
         chat_id = int(getattr(peer, "id", 0) or 0)
         ct = self.s.chat_types.get(str(chat_id))
         if ct is None:
-            ct = "group" if chat_type_name(getattr(peer, "type", 0)) == "group" else "private"
+            # PeerType.GROUP هم کانال است هم گروه → هرگز «group» قطعی تزریق نکن؛
+            # نشان مبهم بگذار تا ensure_chat_type پروب کند (رگرسیون v2.17.7).
+            pt = getattr(peer, "type", 0)
+            ct = (AMBIGUOUS_GROUP if group_like_type_value(pt, peer_types=True)
+                  else "private")
             self.s.chat_types[str(chat_id)] = ct
         await self.s.emit(
             {

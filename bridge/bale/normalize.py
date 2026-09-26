@@ -5,7 +5,13 @@ import logging
 from typing import Any
 
 from .session import BaleSession
-from .types_map import chat_type_name, classify_document, doc_name
+from .types_map import (
+    AMBIGUOUS_GROUP,
+    chat_type_name,
+    classify_document,
+    doc_name,
+    group_like_type_value,
+)
 
 logger = logging.getLogger("bridge.bale.normalize")
 
@@ -18,8 +24,17 @@ class NormalizeEngine:
         """``aiobale.types.Message`` → ``{"message_id","date","chat","from","text"|"photo"|…}``"""
         chat_obj = getattr(msg, "chat", None) or getattr(msg, "peer", None)
         chat_id = int(getattr(chat_obj, "id", 0) or 0)
-        ct = chat_type_name(getattr(chat_obj, "type", None))
-        self.s.chat_types[str(chat_id)] = ct
+        raw_type = getattr(chat_obj, "type", None)
+        ct = chat_type_name(raw_type)
+        # کانال‌ها در آپدیت بله گاهی نوع group-like می‌گیرند (ChatType.GROUP یا
+        # PeerType.GROUP) — هرگز «group» مبهم را به کش ارسالها تزریق نکن؛
+        # نشان «group?» می‌گذاریم تا ensure_chat_type با get_full_group قطعی‌اش کند.
+        from_peer = getattr(msg, "chat", None) is None
+        ambiguous = group_like_type_value(raw_type, peer_types=from_peer)
+        self.s.chat_types.setdefault(
+            str(chat_id), AMBIGUOUS_GROUP if ambiguous else ct)
+        if not ambiguous:
+            self.s.chat_types[str(chat_id)] = ct
         meta = self.s.chat_meta.setdefault(str(chat_id), {"id": chat_id, "type": ct})
         out: dict = {
             "message_id": int(getattr(msg, "message_id", 0) or 0),

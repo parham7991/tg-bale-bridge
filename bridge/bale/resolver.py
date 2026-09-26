@@ -9,7 +9,7 @@ from aiobale.types import InfoMessage, Peer
 
 from ..bot_api import BotAPIError
 from .session import BaleSession
-from .types_map import extract_id, extract_user, peer_type
+from .types_map import AMBIGUOUS_GROUP, extract_id, extract_user, peer_type
 
 logger = logging.getLogger("bridge.bale.resolver")
 
@@ -32,19 +32,30 @@ class ResolverEngine:
         return _NAME_CHAT_TYPES.get(self.chat_type_of(chat_id), ChatType.GROUP)
 
     async def ensure_chat_type(self, chat_id: Any) -> ChatType:
-        """نوع چت را از کش یا با get_full_group تعیین و ثبت می‌کند."""
+        """نوع چت را از کش یا با get_full_group تعیین و ثبت می‌کند.
+
+        مقدار «group?» یعنی نوع از آپدیت مبهم رسیده (کانال/گروه با PeerType.GROUP
+        اشتراک دارند) → همیشه با get_full_group پروب و قطعی می‌شود (v2.17.7).
+        """
         key = str(chat_id)
-        if key in self.s.chat_types:
-            return _NAME_CHAT_TYPES.get(self.s.chat_types[key], ChatType.GROUP)
+        cached = self.s.chat_types.get(key)
+        if cached is not None and cached != AMBIGUOUS_GROUP:
+            return _NAME_CHAT_TYPES.get(cached, ChatType.GROUP)
         try:
             full = await self.s.client.get_full_group(int(chat_id))
         except Exception:
-            self.s.chat_types.setdefault(key, "private")
-            return ChatType.PRIVATE
+            if cached is None:
+                self.s.chat_types.setdefault(key, "private")
+                return ChatType.PRIVATE
+            # پروب ناموقتی شکست — ارسال با GROUP ادامه یابد و بعداً دوباره پروب شود
+            return _NAME_CHAT_TYPES.get(cached, ChatType.GROUP)
         # group_type یک IntEnum است (GROUP=0, CHANNEL=1) — str() عدد می‌دهد!
         gt = getattr(full, "group_type", None)
         is_channel = (gt == 1) or ("CHANNEL" in str(gt).upper())
         name = "channel" if is_channel else "group"
+        if cached in (AMBIGUOUS_GROUP, "group") and name == "channel":
+            logger.info("نوع چت %s پس از پروب به «channel» اصلاح شد "
+                        "(کش قبلی: %s)", chat_id, cached)
         self.s.chat_types[key] = name
         self.s.note_chat(chat_id, {"type": name, "title": getattr(full, "title", None)})
         return _NAME_CHAT_TYPES[name]
