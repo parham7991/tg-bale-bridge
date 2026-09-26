@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from .types_map import has_forward, is_saved_messages, text_of
+from .types_map import bare_chat_id, has_forward, is_saved_messages, text_of
 
 logger = logging.getLogger("bridge.tguser.routing")
 
@@ -44,4 +44,5 @@ class TgEventRouter:
     async def on_delete(self, event: Any) -> None:
         if event.chat_id is None or event.chat_id == self.my_tg_id:
             return
-        await self.bridge.on_tg_delete(event.chat_id, event.deleted_ids or [])
+        await self.bridge.on_tg_delete(bare_chat_id(event.chat_id),
+                                       event.deleted_ids or [])

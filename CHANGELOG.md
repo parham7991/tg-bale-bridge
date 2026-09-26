@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.17.6] - 2026-09-26
+
+### Fixed — TG→Bale mirroring silently did nothing (marked vs bare chat id)
+- **Root cause (live)**: Telethon delivers channel events with the *marked*
+  peer id (`-1003815616564`), while the wizard stores pairs with the *bare*
+  id (`3815616564`). `T2BEngine.mirror` queried `pairs_for_tg(msg.chat_id)`
+  with the marked id → no pair matched → **silent return**, no log, no
+  error. Every Telegram→Bale mirror since the wizard-based pairing was
+  affected (Bale→Telegram worked because `b2t` uses the stored bare id).
+- **Single canonical form — bare ids everywhere on the Telegram side:**
+  - new pure helper `bare_chat_id()` (`bridge/tguser/types_map.py`):
+    `-100XXXXXXXXXX → XXXXXXXXXX`, passes through everything else;
+  - `TgEventRouter.on_delete` + `QueueEngine.on_tg_new/edit/delete`
+    normalize inbound event ids → sent/fingerprint/album/map keys are now
+    consistent with what `control_cmds.test` and `B2T` write (this also
+    repairs the anti-echo `was_sent` check for b2t-mirrored posts);
+  - `sync_edit.process_tg_edit` + `T2BEngine` mapping/reply lookups use
+    the bare key;
+  - `PairsEngine.add` stores the bare id, and `for_tg` matches **both**
+    forms (legacy rows added via `/add -100…` keep working).
+- **Diagnostics**: both mirror engines now log (DEBUG) when an event has
+  no matching pair, so a silent drop can never hide again.
+
+### Tests
+- +4 regression tests: `bare_chat_id` shapes, router delete normalization,
+  pairs store-bare/lookup-both-forms, queueing marked-id end-to-end
+  (anti-echo + queue key + delete key). Suite: 356 green.
+
 ## [2.17.5] - 2026-09-26
 
 ### Fixed — pair-id parsing, restart reliability, Bale session health log

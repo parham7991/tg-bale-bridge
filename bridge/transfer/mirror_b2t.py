@@ -42,6 +42,8 @@ class B2TEngine:
         chat = out[0].get("chat") or {}
         pairs = self.db.pairs_for_bale(chat.get("id"), chat.get("username"))
         if not pairs:
+            logger.debug("بله→تلگرام: جفتی برای chat %s نیست — نادیده گرفته شد",
+                         chat.get("id"))
             return
         logger.info("بله→تلگرام: %d پیام از chat %s", len(out), chat.get("id"))
         for pair in pairs:

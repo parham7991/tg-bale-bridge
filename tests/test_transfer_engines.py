@@ -195,3 +195,28 @@ def test_entities_build_utf16():
 def test_bale_content_photo_picks_largest():
     c = bale_content({"photo": [{"file_id": "a"}, {"file_id": "b"}], "caption": "کپ"})
     assert c["file_id"] == "b" and c["text"] == "کپ"
+
+def test_tg_inbound_normalizes_marked_chat_id():
+    """رویداد کانال با شناسهٔ -100… باید با کلید خالص صف/نگهبان شود (v2.17.6)."""
+    async def body():
+        db = FakeDB()
+        db.sent.add(("tg", "3815616564", 9))    # خودمان قبلاً فرستاده‌ایم (خالص)
+        qe = QueueEngine(LoopGuard(db),
+                         AlbumCollector(asyncio.Queue(), lambda: 0.01, lambda m: m.id),
+                         AlbumCollector(asyncio.Queue(), lambda: 0.01,
+                                        lambda m: m["message_id"]))
+        qe.albums_tg.queue = qe.q_tg
+        qe.albums_bale.queue = qe.q_bale
+        # پیام نشان‌دارِ «خودمان» → باید دیده شود و در صف نرود (ضدپژواک)
+        await qe.on_tg_new(SimpleNamespace(chat_id=-1003815616564, id=9, grouped_id=None))
+        assert qe.q_tg.empty()
+        # پیام جدید نشان‌دار → در صف با کلید خالص
+        msg = SimpleNamespace(chat_id=-1003815616564, id=10, grouped_id=None)
+        await qe.on_tg_new(msg)
+        kind, payload = qe.q_tg.get_nowait()
+        assert kind == "new" and payload == [msg]
+        # حذف نشان‌دار → کلید خالص
+        await qe.on_tg_delete(-1003815616564, [11])
+        kind, payload = qe.q_tg.get_nowait()
+        assert kind == "delete" and payload == ("3815616564", [11])
+    run(body())

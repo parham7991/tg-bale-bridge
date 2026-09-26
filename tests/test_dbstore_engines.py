@@ -187,3 +187,21 @@ def test_facade_remove_pair_deletes_maps(db):
     db.add_map(pid, "tg", "-1", 1, "bale", "7", 2)
     assert db.remove_pair(pid)
     assert not db.other_side("tg", "-1", 1)
+
+# ───── نرمال‌سازی شناسهٔ تلگرام در جفت‌ها (رگرسیون v2.17.6) ─────
+
+def test_pairs_add_stores_bare_marked_id(engine):
+    p = PairsEngine(engine)
+    pid = p.add(-1003815616564, "MARVELL", "Marvellit", "287806378", "", "", "both")
+    assert p.get(pid)["tg_chat_id"] == 3815616564     # نشان‌دار → خالص ذخیره می‌شود
+
+
+def test_pairs_for_tg_matches_both_forms(engine):
+    p = PairsEngine(engine)
+    p.add(3815616564, "", "", "287806378", "", "", "both")       # ذخیرهٔ خالص (ویزارد)
+    assert p.for_tg(-1003815616564)      # رویداد تلگتون با شناسهٔ نشان‌دار
+    assert p.for_tg(3815616564)          # جست‌وجوی خالص
+    pid2 = p.add(-1001234567890, "", "", "5", "", "", "tg2bale")  # /add با نشان‌دار
+    assert p.get(pid2)["tg_chat_id"] == 1234567890
+    assert p.for_tg(-1001234567890) and p.for_tg(1234567890)
+    assert not p.for_tg(-1001111111111)   # جفتِ چت دیگر پیدا نشود

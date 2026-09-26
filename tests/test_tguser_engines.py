@@ -10,7 +10,12 @@ from bridge.tguser.gateway import TgSelfGateway
 from bridge.tguser.login import TgLoginEngine
 from bridge.tguser.routing import TgEventRouter
 from bridge.tguser.session import TgSelfSession
-from bridge.tguser.types_map import has_forward, is_saved_messages, text_of
+from bridge.tguser.types_map import (
+    bare_chat_id,
+    has_forward,
+    is_saved_messages,
+    text_of,
+)
 from tests.conftest import run
 
 # ───────────────────────────── فیک‌ها ─────────────────────────────
@@ -346,3 +351,21 @@ def test_module_level_register_compat():
     bridge, admin = FakeBridge(), FakeAdmin()
     register(client, bridge, admin, 123)
     assert len(client.handlers) == 3
+
+# ───── شناسهٔ نشان‌دار تلگتون → خالص (رگرسیون v2.17.6: TG→Bale بی‌صدا) ─────
+
+def test_bare_chat_id_forms():
+    assert bare_chat_id(-1003815616564) == 3815616564    # کانال نشان‌دار
+    assert bare_chat_id(-1001234567890) == 1234567890
+    assert bare_chat_id(3815616564) == 3815616564        # خالص → دست‌نخورده
+    assert bare_chat_id(-12345) == -12345                # گروه قدیمی → دست‌نخورده
+    assert bare_chat_id(-100) == -100                    # خارج از بازهٔ نشان‌دار
+    assert bare_chat_id("-1003815616564") == 3815616564  # رشته‌ای
+    assert bare_chat_id(None) == 0
+    assert bare_chat_id("x") == 0
+
+
+def test_router_delete_normalizes_marked_chat_id():
+    router, bridge, _ = _router()
+    run(router.on_delete(event(chat_id=-1003815616564, deleted_ids=[7])))
+    assert bridge.delete == [(3815616564, [7])]

@@ -11,6 +11,7 @@ from pathlib import Path
 
 from .. import formatter as fmt
 from ..bot_api import BotAPIError
+from ..tguser.types_map import bare_chat_id
 from .types_map import GROUPABLE, fingerprint, tg_kind
 
 logger = logging.getLogger("bridge.transfer.t2b")
@@ -27,11 +28,14 @@ class T2BEngine:
 
     # ───────────────────────────── ورودی ─────────────────────────────
     async def mirror(self, msgs) -> None:
-        msgs = [m for m in msgs if not self.db.was_sent("tg", str(m.chat_id), m.id)]
+        msgs = [m for m in msgs
+                if not self.db.was_sent("tg", str(bare_chat_id(m.chat_id)), m.id)]
         if not msgs:
             return
-        pairs = self.db.pairs_for_tg(msgs[0].chat_id)
+        pairs = self.db.pairs_for_tg(bare_chat_id(msgs[0].chat_id))
         if not pairs:
+            logger.debug("تلگرام→بله: جفتی برای chat %s نیست — نادیده گرفته شد",
+                         msgs[0].chat_id)
             return
         logger.info("تلگرام→بله: %d پیام از chat %s", len(msgs), msgs[0].chat_id)
         for pair in pairs:
@@ -46,7 +50,8 @@ class T2BEngine:
         reply_to = None
         if first.reply_to_msg_id:
             for o in self.db.other_side(
-                    "tg", str(first.chat_id), first.reply_to_msg_id, pair["id"]):
+                    "tg", str(bare_chat_id(first.chat_id)),
+                    first.reply_to_msg_id, pair["id"]):
                 if o["platform"] == "bale":
                     reply_to = o["msg"]
                     break
@@ -60,8 +65,8 @@ class T2BEngine:
             mapped = await self.album_to_bale(msgs, dst, reply_to)
 
         for src_msg, did in mapped:
-            self.db.add_map(pair["id"], "tg", str(src_msg.chat_id), src_msg.id,
-                            "bale", str(dst), did)
+            self.db.add_map(pair["id"], "tg", str(bare_chat_id(src_msg.chat_id)),
+                            src_msg.id, "bale", str(dst), did)
             self.db.mark_sent("bale", str(dst), did)
             self.db.add_fp("bale", str(dst),
                            fingerprint(tg_kind(src_msg), (src_msg.message or "")))

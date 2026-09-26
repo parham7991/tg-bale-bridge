@@ -9,6 +9,7 @@ import asyncio
 import logging
 from typing import Callable, Dict
 
+from ..tguser.types_map import bare_chat_id
 from .albums import AlbumCollector
 from .loopguard import LoopGuard
 
@@ -55,8 +56,10 @@ class QueueEngine:
                 logger.exception("خطا در پردازش رویداد %s", label)
 
     # ───────────────────── ورودی‌ها: سمت تلگرام ─────────────────────
+    # نکته: رویداد Telethon شناسهٔ کانال را نشان‌دار (-100…) می‌دهد؛ همهٔ کلیدها
+    # در پل/دیتابیس خالص‌اند → ورودی را با bare_chat_id نرمال می‌کنیم.
     async def on_tg_new(self, msg) -> None:
-        chat_key = str(msg.chat_id)
+        chat_key = str(bare_chat_id(msg.chat_id))
         if self.guard.seen("tg", chat_key, msg.id):
             return
         if msg.grouped_id:
@@ -65,12 +68,12 @@ class QueueEngine:
         await self.q_tg.put(("new", [msg]))
 
     async def on_tg_edit(self, msg) -> None:
-        if self.guard.seen("tg", str(msg.chat_id), msg.id):
+        if self.guard.seen("tg", str(bare_chat_id(msg.chat_id)), msg.id):
             return
         await self.q_tg.put(("edit", msg))
 
     async def on_tg_delete(self, chat_id, deleted_ids) -> None:
-        chat_key = str(chat_id)
+        chat_key = str(bare_chat_id(chat_id))
         ids = []
         for mid in deleted_ids:
             if self.guard.consume("tg", chat_key, mid):

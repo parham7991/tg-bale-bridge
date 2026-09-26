@@ -15,6 +15,22 @@ def is_saved_messages(msg: Any, my_tg_id: int) -> bool:
         return False
 
 
+def bare_chat_id(chat_id: Any) -> int:
+    """شناسهٔ «نشان‌دار» تلگتون (‎-100…) → شناسهٔ خالص کانال/سوپرگروه.
+
+    رویدادهای Telethon برای کانال‌ها chat_id را به‌شکل ``-100XXXXXXXXXX`` می‌دهند،
+    در حالی که جفت‌ها (ویرایش/حذف/صف‌ها) با شناسهٔ خالص ذخیره می‌شوند — این
+    نرمال‌سازی جلوی «جفت پیدا نشد»های بی‌صدا را می‌گیرد (باگ زندهٔ v2.17.5).
+    """
+    try:
+        n = int(chat_id)
+    except (TypeError, ValueError):
+        return 0
+    if -1009999999999 <= n <= -1000000000000:
+        return -(n + 1000000000000)
+    return n
+
+
 def text_of(msg: Any) -> str:
     return (msg.message or "").strip() if msg.message else ""
 

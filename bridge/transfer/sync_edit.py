@@ -10,6 +10,7 @@ import logging
 
 from .. import formatter as fmt
 from ..bot_api import BotAPIError
+from ..tguser.types_map import bare_chat_id
 from .types_map import bale_content, build_entities, tg_kind
 
 logger = logging.getLogger("bridge.transfer.edits")
@@ -29,7 +30,7 @@ class EditSyncEngine:
 
     # --------------------------------- تلگرام → بله
     async def process_tg_edit(self, msg) -> None:
-        chat_key = str(msg.chat_id)
+        chat_key = str(bare_chat_id(msg.chat_id))
         for o in self.db.other_side("tg", chat_key, msg.id):
             if o["platform"] != "bale":
                 continue
