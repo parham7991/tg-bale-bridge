@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import logging
 
+from .types_map import parse_pair_id
+
 logger = logging.getLogger("bridge.admin.control")
 
 
@@ -42,7 +44,10 @@ class ControlCommandsEngine:
     async def test(self, platform, args, msg):
         if not args:
             return "فرمت: /test <شناسه جفت>"
-        pair = self.db.get_pair(int(args[0]))
+        pid = parse_pair_id(args[0])
+        if pid is None:
+            return "فرمت: /test <شناسه جفت> — نمونه: /test 1"
+        pair = self.db.get_pair(pid)
         if not pair:
             return "چنین جفتی پیدا نشد."
         text = f"✅ تست پل همگام‌سازی — جفت #{pair['id']}"

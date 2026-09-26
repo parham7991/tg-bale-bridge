@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 
 from ..bale import BaleBotGateway
-from .types_map import MODE_ALIASES, MODE_LABELS
+from .types_map import MODE_ALIASES, MODE_LABELS, parse_pair_id
 
 logger = logging.getLogger("bridge.admin.pairs")
 
@@ -53,17 +53,23 @@ class PairsCommandsEngine:
     def remove(self, platform, args, msg):
         if not args:
             return "فرمت: /remove <شناسه جفت>"
-        ok = self.db.remove_pair(int(args[0]))
+        pid = parse_pair_id(args[0])
+        if pid is None:
+            return "فرمت: /remove <شناسه جفت> — نمونه: /remove 1"
+        ok = self.db.remove_pair(pid)
         return "✅ جفت حذف شد." if ok else "چنین جفتی پیدا نشد."
 
     def mode(self, platform, args, msg):
         if len(args) < 2:
             return "فرمت: /mode <شناسه جفت> <both|tg2bale|bale2tg>"
+        pid = parse_pair_id(args[0])
+        if pid is None:
+            return "فرمت: /mode <شناسه جفت> <both|tg2bale|bale2tg> — نمونه: /mode 1 both"
         mode = MODE_ALIASES.get(args[1].lower().replace("-", "_"))
         if not mode:
             return "حالت نامعتبر. یکی از: both ، tg2bale ، bale2tg"
-        ok = self.db.set_mode(int(args[0]), mode)
-        return f"✅ جهت جفت #{args[0]} → {MODE_LABELS[mode]}" if ok else "چنین جفتی پیدا نشد."
+        ok = self.db.set_mode(pid, mode)
+        return f"✅ جهت جفت #{pid} → {MODE_LABELS[mode]}" if ok else "چنین جفتی پیدا نشد."
 
     def list(self, platform, args, msg):
         pairs = self.db.list_pairs()

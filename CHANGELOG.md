@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.17.5] - 2026-09-26
+
+### Fixed — pair-id parsing, restart reliability, Bale session health log
+- **`/test #1` crashed** with `ValueError: invalid literal for int(): '#1'`
+  (seen live in server log). New pure helper `parse_pair_id` in
+  `bridge/admin/types_map.py` accepts `#1`, `۱` (Persian digits), `№3`,
+  whitespace and plain ints, returning `None` for garbage — used by
+  `/test`, `/mode` and `/remove`, which now reply with a format hint
+  instead of raising.
+- **`restart.sh` killed nothing**: the process runs with an absolute path
+  (`/root/tg-bale-bridge/main.py`), so the literal pattern
+  `venv/bin/python main.py` never matched, while `pgrep -f` did match the
+  SSH wrapper command itself (the classic self-kill trap). The script is
+  now versioned in the repo, matches with the bracket trick
+  (`grep "[m]ain\.py"` — matches the real process, never its own command
+  line), waits up to 10s for full exit (SIGKILL fallback) so port 8080 is
+  free, then starts the bridge.
+- **Silent dead Bale session**: after aiobale's ping loop died
+  (`Cannot write to closing transport`), nothing in the log showed the
+  self-bot was deaf. `BaleSession.start` now logs success
+  («کلاینت بله (aiobale) وصل شد») and failures (`logger.exception` +
+  re-raise), so boot health is visible at a glance.
+
+### Tests
+- +9 regression tests: `parse_pair_id` shapes, `/test #1` end-to-end via
+  admin facade, `/mode #1 both`, `/remove #2`, invalid-id format hints,
+  `BaleSession.start` health log (success + failure). Suite: 352 green.
+
 ## [2.17.4] - 2026-09-22
 
 ### Fixed — live pairing: Bale CHANNEL sends + message-id capture

@@ -87,6 +87,19 @@ def parse_command(text: str):
     return None, []
 
 
+_PERSIAN_DIGITS = str.maketrans("۰۱۲۳۴۵۶۷۸۹", "0123456789")
+
+
+def parse_pair_id(raw) -> int | None:
+    """«#1»/«۱»/« 1 » → 1 ؛ ورودی نامعتبر → None (بدون exception)."""
+    s = str(raw or "").strip().translate(_PERSIAN_DIGITS).lstrip("#№").strip()
+    try:
+        n = int(s)
+    except (TypeError, ValueError):
+        return None
+    return n if n > 0 else None
+
+
 def fmt_duration(seconds: float) -> str:
     """ثانیه → «2d 3h 15m»."""
     seconds = int(max(0, seconds))

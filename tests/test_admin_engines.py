@@ -12,7 +12,7 @@ from bridge.admin import (
 )
 from bridge.admin.resolver import ResolverEngine
 from bridge.admin.surfaces import SurfacesEngine
-from bridge.admin.types_map import fmt_duration, parse_command
+from bridge.admin.types_map import fmt_duration, parse_command, parse_pair_id
 from tests.conftest import run
 
 # ───────────────────────────── فیک‌ها ─────────────────────────────
@@ -190,3 +190,64 @@ def test_alias_surface_full_coverage():
                   "pause", "resume", "logs", "access", "promote", "dashboard",
                   "passwd", "dashuser", "setup"):
         assert token in CMD_ALIASES, token
+
+# ───────────────── شناسهٔ جفت: «#1» و ارقام فارسی (رگرسیون v2.17.5) ─────────────────
+
+def test_parse_pair_id_shapes():
+    assert parse_pair_id("#1") == 1
+    assert parse_pair_id(" 1 ") == 1
+    assert parse_pair_id("۲") == 2          # ارقام فارسی
+    assert parse_pair_id("№3") == 3
+    assert parse_pair_id(4) == 4
+    assert parse_pair_id("abc") is None
+    assert parse_pair_id("#x") is None
+    assert parse_pair_id("0") is None
+    assert parse_pair_id("-2") is None
+    assert parse_pair_id("") is None
+    assert parse_pair_id(None) is None
+
+
+def test_cmd_test_accepts_hash_pair_id():
+    sent = []
+
+    async def fake_send(cid, text):
+        sent.append((cid, text))
+
+    bale = SimpleNamespace(send_message=fake_send)
+    pair = {"id": 1, "mode": "tg2bale", "bale_chat_id": 55, "tg_chat_id": 66}
+    db = SimpleNamespace(get_pair=lambda pid: pair if pid == 1 else None,
+                         set_meta=lambda *a: None, mark_sent=lambda *a: None)
+    adm, _ = make_admin(bale=bale, db=db)
+    out = run(adm.handle("tg", 1, 42, "/test #1"))
+    assert sent and sent[0][0] == 55
+    assert "بله ✔" in out
+
+
+def test_cmd_test_invalid_pair_id_format_hint():
+    adm, _ = make_admin(db=SimpleNamespace(get_pair=lambda pid: None))
+    out = run(adm.handle("tg", 1, 42, "/test abc"))
+    assert "فرمت" in out
+
+
+def test_cmd_mode_accepts_hash_pair_id():
+    calls = []
+    db = SimpleNamespace(set_mode=lambda pid, mode: calls.append((pid, mode)) or True)
+    adm, _ = make_admin(db=db)
+    out = run(adm.handle("tg", 1, 42, "/mode #1 both"))
+    assert calls == [(1, "both")]
+    assert "جهت جفت #1" in out
+
+
+def test_cmd_mode_invalid_id_format_hint():
+    adm, _ = make_admin()
+    assert "فرمت" in run(adm.handle("tg", 1, 42, "/mode x both"))
+
+
+def test_cmd_remove_accepts_hash_pair_id():
+    calls = []
+    db = SimpleNamespace(remove_pair=lambda pid: calls.append(pid) or True)
+    adm, _ = make_admin(db=db)
+    out = run(adm.handle("tg", 1, 42, "/remove #2"))
+    assert calls == [2]
+    assert "حذف شد" in out
+    assert "فرمت" in run(adm.handle("tg", 1, 42, "/remove q"))

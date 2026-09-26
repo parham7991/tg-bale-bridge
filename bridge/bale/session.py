@@ -59,8 +59,13 @@ class BaleSession:
         """اتصال پس‌زمینه (start با run_in_background=True بلاک نمی‌کند)."""
         if self.started:
             return
-        await self.client.start(run_in_background=True, signal_handling=False)
+        try:
+            await self.client.start(run_in_background=True, signal_handling=False)
+        except Exception:
+            logger.exception("بوت کلاینت بله ناموفق بود")
+            raise
         self.started = True
+        logger.info("کلاینت بله (aiobale) وصل شد — دریافت رویدادها فعال است")
 
     async def ensure_started(self) -> None:
         if not self.started:

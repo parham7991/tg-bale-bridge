@@ -342,3 +342,43 @@ def test_snapshot_result_reads_aiobale_id_attr():
     # هیچ‌کدام → صفر
     out3 = BaleSession.snapshot_result(fake, 1, NS(x=1))
     assert out3["message_id"] == 0
+
+# ───────────────── سلامت بوت سشن بله (رگرسیون v2.17.5) ─────────────────
+
+def test_session_start_logs_health(caplog):
+    import logging
+
+    from bridge.bale.session import BaleSession
+
+    class OkClient:
+        def __init__(self):
+            self.started = False
+
+        async def start(self, run_in_background=False, signal_handling=True):
+            self.started = True
+
+    c = OkClient()
+    ses = BaleSession(client=c)
+    with caplog.at_level(logging.INFO, logger="bridge.bale.session"):
+        run(ses.start())
+    assert ses.started is True
+    assert any("وصل شد" in r.message for r in caplog.records)
+
+
+def test_session_start_failure_logs_and_reraises(caplog):
+    import logging
+
+    import pytest
+
+    from bridge.bale.session import BaleSession
+
+    class BadClient:
+        async def start(self, run_in_background=False, signal_handling=True):
+            raise RuntimeError("boom")
+
+    ses = BaleSession(client=BadClient())
+    with caplog.at_level(logging.ERROR, logger="bridge.bale.session"):
+        with pytest.raises(RuntimeError):
+            run(ses.start())
+    assert ses.started is False
+    assert any("ناموفق" in r.message for r in caplog.records)
